@@ -1,0 +1,1 @@
+from geneal.genetic_algorithms._binary import BinaryGenAlgSolver
