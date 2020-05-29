@@ -1,1 +1,2 @@
 from geneal.genetic_algorithms._binary import BinaryGenAlgSolver
+from geneal.genetic_algorithms._continuous import ContinuousGenAlgSolver

@@ -1,7 +1,5 @@
 import math
-
 import numpy as np
-import matplotlib.pyplot as plt
 
 from geneal.genetic_algorithms._genetic_algorithm import GenAlgSolver
 
@@ -37,6 +35,11 @@ class BinaryGenAlgSolver(GenAlgSolver):
             selection=selection
         )
 
-    @staticmethod
-    def create_offspring(first_parent, sec_parent, crossover_pt):
+    def initialize_population(self):
+        return np.round(np.random.rand(self.pop_size, self.n_genes))
+
+    def create_offspring(self, first_parent, sec_parent, crossover_pt, offspring_number):
         return np.hstack((first_parent[:crossover_pt], sec_parent[crossover_pt:]))
+
+    def mutate_variables(self, population):
+        return np.abs(population - 1)
