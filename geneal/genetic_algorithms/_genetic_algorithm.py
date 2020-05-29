@@ -1,8 +1,11 @@
+import datetime
 import math
 from abc import ABCMeta, abstractmethod
 
 import numpy as np
 import matplotlib.pyplot as plt
+
+from geneal.utils.helpers import print_elapsed_time
 
 
 class GenAlgSolver(metaclass=ABCMeta):
@@ -39,6 +42,8 @@ class GenAlgSolver(metaclass=ABCMeta):
         self.best_individual_ = None
 
     def solve(self):
+
+        start_time = datetime.datetime.now()
 
         mean_fitness = np.ndarray(shape=(1, 0))
         max_fitness = np.ndarray(shape=(1, 0))
@@ -126,6 +131,12 @@ class GenAlgSolver(metaclass=ABCMeta):
 
         self.plot_results(mean_fitness, max_fitness, gen_n)
 
+        end_time = datetime.datetime.now()
+
+        time_str = print_elapsed_time(start_time, end_time)
+
+        self.print_stats(time_str)
+
     def calculate_fitness(self, population):
         return np.apply_along_axis(self.fitness_function, 1, population)
 
@@ -151,6 +162,20 @@ class GenAlgSolver(metaclass=ABCMeta):
 
         plt.legend()
         plt.show()
+
+    def print_stats(self, time_str):
+
+        print("\n#############################")
+        print("#\t\t\tSTATS\t\t\t#")
+        print("#############################\n\n")
+        print(f"Total running time: {time_str}\n\n")
+        print(f"Population size: {self.pop_size}")
+        print(f"Number variables: {self.n_genes}")
+        print(f"Selection rate: {self.selection}")
+        print(f"Mutation rate: {self.mutation_rate}")
+        print(f"Number Generations: {self.generations_}\n")
+        print(f"Best fitness: {self.best_fitness_}")
+        print(f"Best individual: {self.best_individual_}")
 
     @abstractmethod
     def initialize_population(self):
