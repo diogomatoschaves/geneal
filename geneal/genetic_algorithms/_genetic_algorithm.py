@@ -138,7 +138,7 @@ class GenAlgSolver(metaclass=ABCMeta):
         self.print_stats(time_str)
 
     def calculate_fitness(self, population):
-        return np.apply_along_axis(self.fitness_function, 1, population)
+        return np.array(list(map(self.fitness_function, population)))
 
     @staticmethod
     def sort_by_fitness(fitness, population):
