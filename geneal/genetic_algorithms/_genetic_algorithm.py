@@ -1,5 +1,6 @@
 import datetime
 import math
+import inspect
 from abc import ABCMeta, abstractmethod
 
 import numpy as np
@@ -17,29 +18,62 @@ class GenAlgSolver(metaclass=ABCMeta):
         max_gen: int = 1000,
         pop_size: int = 100,
         mutation_rate: float = 0.15,
-        selection: float = 0.5,
+        selection_rate: float = 0.5,
     ):
         """
-        :param fitness_function:
-        :param n_genes:
-        :param max_gen:
-        :param pop_size:
-        :param mutation_rate:
-        :param selection:
+        :param fitness_function: can either be a fitness function or
+        a class implementing a fitness function + methods to override
+        the default ones: create_offspring, mutate_population, initialize_population
+        :param n_genes: number of genes (variables) to have in each chromosome
+        :param max_gen: maximum number of generations to perform the optimization
+        :param pop_size: population size
+        :param mutation_rate: rate at which random mutations occur
+        :param selection_rate: percentage of the population to be selected for crossover
         """
 
-        self.fitness_function = fitness_function
         self.n_genes = n_genes
         self.max_gen = max_gen
         self.pop_size = pop_size
         self.mutation_rate = mutation_rate
-        self.selection = selection
+        self.selection = selection_rate
 
-        self.pop_keep = math.floor(selection * pop_size)
+        self.pop_keep = math.floor(selection_rate * pop_size)
 
         self.generations_ = 0
         self.best_fitness_ = 0
         self.best_individual_ = None
+
+        self.fitness_function = fitness_function
+        self.initialize_population = self.initialize_population
+        self.create_offspring = self.create_offspring
+        self.mutate_population = self.mutate_population
+
+        self.handle_overriding(fitness_function)
+
+    def handle_overriding(self, fitness_function):
+        if inspect.isclass(fitness_function):
+
+            overriding_class = fitness_function()
+
+            try:
+                self.fitness_function = overriding_class.fitness_function
+            except AttributeError:
+                raise Exception("Overriding class must implement a 'fitness_function' method")
+
+            try:
+                self.initialize_population = overriding_class.initialize_population
+            except AttributeError:
+                pass
+
+            try:
+                self.create_offspring = overriding_class.create_offspring
+            except AttributeError:
+                pass
+
+            try:
+                self.mutate_population = overriding_class.mutate_population
+            except AttributeError:
+                pass
 
     def solve(self):
 
@@ -61,6 +95,10 @@ class GenAlgSolver(metaclass=ABCMeta):
 
         prob_intervals = np.array([0, *np.cumsum(mating_prob[: self.pop_keep + 1])])
 
+        find_parent = np.vectorize(
+            lambda value: np.argmin(value > prob_intervals) - 1
+        )
+
         number_matings = math.floor((self.pop_size - self.pop_keep) / 2)
 
         gen_n = 0
@@ -72,10 +110,6 @@ class GenAlgSolver(metaclass=ABCMeta):
 
             mean_fitness = np.append(mean_fitness, fitness.mean())
             max_fitness = np.append(max_fitness, fitness[0])
-
-            find_parent = np.vectorize(
-                lambda value: np.argmin(value > prob_intervals) - 1
-            )
 
             ma = find_parent(np.random.rand(number_matings))
             pa = find_parent(np.random.rand(number_matings))
@@ -112,7 +146,7 @@ class GenAlgSolver(metaclass=ABCMeta):
                     np.ceil(np.random.rand(1, n_mutations) * self.n_genes) - 1
             ).astype(int)
 
-            mask = self.mutate_variables(population)
+            mask = self.mutate_population(population)
 
             population[mutation_rows, mutation_cols] = mask[
                 mutation_rows, mutation_cols
@@ -186,5 +220,5 @@ class GenAlgSolver(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def mutate_variables(self, population):
+    def mutate_population(self, population):
         pass

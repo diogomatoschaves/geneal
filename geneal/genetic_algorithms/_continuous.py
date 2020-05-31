@@ -12,17 +12,22 @@ class ContinuousGenAlgSolver(GenAlgSolver):
             max_gen: int = 1000,
             pop_size: int = 100,
             mutation_rate: float = 0.15,
-            selection: float = 0.5,
+            selection_rate: float = 0.5,
             variables_limits=None,
             problem_type=float
     ):
         """
-        :param fitness_function:
-        :param n_genes:
-        :param max_gen:
-        :param pop_size:
-        :param mutation_rate:
-        :param selection:
+        :param fitness_function: can either be a fitness function or
+        a class implementing a fitness function + methods to override
+        the default ones: create_offspring, mutate_population, initialize_population
+        :param n_genes: number of genes (variables) to have in each chromosome
+        :param max_gen: maximum number of generations to perform the optimization
+        :param pop_size: population size
+        :param mutation_rate: rate at which random mutations occur
+        :param selection_rate: percentage of the population to be selected for crossover
+        :param variables_limits: limits for each variable [(x1_min, x1_max), (x2_min, x2_max), ...]. If only
+        one tuple is provided, then it is assumed the same for every variable
+        :param problem_type: whether problem is of float or integer type
         """
 
         GenAlgSolver.__init__(
@@ -32,7 +37,7 @@ class ContinuousGenAlgSolver(GenAlgSolver):
             max_gen=max_gen,
             pop_size=pop_size,
             mutation_rate=mutation_rate,
-            selection=selection
+            selection_rate=selection_rate
         )
 
         if not variables_limits:
@@ -68,5 +73,5 @@ class ContinuousGenAlgSolver(GenAlgSolver):
 
         return np.hstack((first_parent[:crossover_pt], p_new, sec_parent[crossover_pt+1:]))
 
-    def mutate_variables(self, population):
+    def mutate_population(self, population):
         return self.initialize_population()
