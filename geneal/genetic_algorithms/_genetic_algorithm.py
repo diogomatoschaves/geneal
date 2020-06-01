@@ -10,7 +10,6 @@ from geneal.utils.helpers import print_elapsed_time
 
 
 class GenAlgSolver(metaclass=ABCMeta):
-
     def __init__(
         self,
         fitness_function,
@@ -19,6 +18,7 @@ class GenAlgSolver(metaclass=ABCMeta):
         pop_size: int = 100,
         mutation_rate: float = 0.15,
         selection_rate: float = 0.5,
+        n_crossover_points: int = 1,
     ):
         """
         :param fitness_function: can either be a fitness function or
@@ -35,7 +35,8 @@ class GenAlgSolver(metaclass=ABCMeta):
         self.max_gen = max_gen
         self.pop_size = pop_size
         self.mutation_rate = mutation_rate
-        self.selection = selection_rate
+        self.selection_rate = selection_rate
+        self.n_crossover_points = n_crossover_points
 
         self.pop_keep = math.floor(selection_rate * pop_size)
 
@@ -50,28 +51,30 @@ class GenAlgSolver(metaclass=ABCMeta):
 
         self.handle_overriding(fitness_function)
 
-    def handle_overriding(self, fitness_function):
-        if inspect.isclass(fitness_function):
+    def handle_overriding(self, overriding_class):
+        if inspect.isclass(overriding_class):
 
-            overriding_class = fitness_function()
+            # overriding_class = fitness_function()
 
             try:
                 self.fitness_function = overriding_class.fitness_function
             except AttributeError:
-                raise Exception("Overriding class must implement a 'fitness_function' method")
+                raise Exception(
+                    "Overriding class must implement a 'fitness_function' method"
+                )
 
             try:
-                self.initialize_population = overriding_class.initialize_population
+                self.initialize_population = lambda: overriding_class.initialize_population(self)
             except AttributeError:
                 pass
 
             try:
-                self.create_offspring = overriding_class.create_offspring
+                self.create_offspring = lambda *args: overriding_class.create_offspring(self, *args)
             except AttributeError:
                 pass
 
             try:
-                self.mutate_population = overriding_class.mutate_population
+                self.mutate_population = lambda *args: overriding_class.mutate_population(self, *args)
             except AttributeError:
                 pass
 
@@ -95,11 +98,13 @@ class GenAlgSolver(metaclass=ABCMeta):
 
         prob_intervals = np.array([0, *np.cumsum(mating_prob[: self.pop_keep + 1])])
 
-        find_parent = np.vectorize(
-            lambda value: np.argmin(value > prob_intervals) - 1
-        )
+        find_parent = np.vectorize(lambda value: np.argmin(value > prob_intervals) - 1)
 
         number_matings = math.floor((self.pop_size - self.pop_keep) / 2)
+
+        n_mutations = math.ceil(
+            (self.pop_size - 1) * self.n_genes * self.mutation_rate
+        )
 
         gen_n = 0
         while True:
@@ -116,9 +121,8 @@ class GenAlgSolver(metaclass=ABCMeta):
 
             ix = np.arange(0, self.pop_size - self.pop_keep - 1, 2)  # index of mate #1
 
-            # crossover point
-            xp = np.round(np.random.rand(number_matings) * (self.n_genes - 1)).astype(
-                int
+            xp = np.array(
+                list(map(lambda _: self.get_crossover_points(), range(number_matings)))
             )
 
             for i in range(xp.shape[0]):
@@ -133,24 +137,7 @@ class GenAlgSolver(metaclass=ABCMeta):
                     population[pa[i], :], population[ma[i], :], xp[i], "second"
                 )
 
-            # Mutate bits
-            n_mutations = math.ceil(
-                (self.pop_size - 1) * self.n_genes * self.mutation_rate
-            )
-
-            mutation_rows = np.ceil(
-                np.random.rand(1, n_mutations) * (self.pop_size - 1)
-            ).astype(int)
-
-            mutation_cols = (
-                    np.ceil(np.random.rand(1, n_mutations) * self.n_genes) - 1
-            ).astype(int)
-
-            mask = self.mutate_population(population)
-
-            population[mutation_rows, mutation_cols] = mask[
-                mutation_rows, mutation_cols
-            ]
+            population = self.mutate_population(population, n_mutations)
 
             fitness = np.hstack((fitness[0], self.calculate_fitness(population[1:, :])))
 
@@ -162,6 +149,7 @@ class GenAlgSolver(metaclass=ABCMeta):
         self.generations_ = gen_n
         self.best_fitness_ = fitness[0]
         self.best_individual_ = population[0, :]
+        self.population_ = population
 
         self.plot_results(mean_fitness, max_fitness, gen_n)
 
@@ -184,6 +172,13 @@ class GenAlgSolver(metaclass=ABCMeta):
 
         return fitness, population
 
+    def get_crossover_points(self):
+        return np.sort(
+            np.random.choice(
+                np.arange(self.n_genes), self.n_crossover_points, replace=False
+            )
+        )
+
     @staticmethod
     def plot_results(mean_fitness, max_fitness, iterations):
 
@@ -191,8 +186,8 @@ class GenAlgSolver(metaclass=ABCMeta):
 
         x = np.arange(1, iterations + 1)
 
-        plt.plot(x, mean_fitness, label='mean fitness')
-        plt.plot(x, max_fitness, label='max fitness')
+        plt.plot(x, mean_fitness, label="mean fitness")
+        plt.plot(x, max_fitness, label="max fitness")
 
         plt.legend()
         plt.show()
@@ -205,7 +200,7 @@ class GenAlgSolver(metaclass=ABCMeta):
         print(f"Total running time: {time_str}\n\n")
         print(f"Population size: {self.pop_size}")
         print(f"Number variables: {self.n_genes}")
-        print(f"Selection rate: {self.selection}")
+        print(f"Selection rate: {self.selection_rate}")
         print(f"Mutation rate: {self.mutation_rate}")
         print(f"Number Generations: {self.generations_}\n")
         print(f"Best fitness: {self.best_fitness_}")
@@ -216,9 +211,19 @@ class GenAlgSolver(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def create_offspring(self, first_parent, sec_parent, crossover_pt, offspring_number):
+    def create_offspring(
+        self, first_parent, sec_parent, crossover_pt, offspring_number
+    ):
         pass
 
-    @abstractmethod
-    def mutate_population(self, population):
-        pass
+    def mutate_population(self, population, n_mutations):
+
+        mutation_rows = np.ceil(
+            np.random.rand(1, n_mutations) * (self.pop_size - 1)
+        ).astype(int)
+
+        mutation_cols = (
+            np.ceil(np.random.rand(1, n_mutations) * self.n_genes) - 1
+        ).astype(int)
+
+        return [mutation_rows, mutation_cols]

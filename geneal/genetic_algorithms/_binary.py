@@ -1,4 +1,3 @@
-import math
 import numpy as np
 
 from geneal.genetic_algorithms._genetic_algorithm import GenAlgSolver
@@ -14,6 +13,7 @@ class BinaryGenAlgSolver(GenAlgSolver):
         pop_size: int = 100,
         mutation_rate: float = 0.15,
         selection_rate: float = 0.5,
+        n_crossover_points: int = 1,
     ):
         """
         :param fitness_function: can either be a fitness function or a class implementing a fitness function +
@@ -33,14 +33,28 @@ class BinaryGenAlgSolver(GenAlgSolver):
             max_gen=max_gen,
             pop_size=pop_size,
             mutation_rate=mutation_rate,
-            selection_rate=selection_rate
+            selection_rate=selection_rate,
+            n_crossover_points=n_crossover_points,
         )
 
     def initialize_population(self):
         return np.round(np.random.rand(self.pop_size, self.n_genes))
 
-    def create_offspring(self, first_parent, sec_parent, crossover_pt, offspring_number):
-        return np.hstack((first_parent[:crossover_pt], sec_parent[crossover_pt:]))
+    def create_offspring(
+        self, first_parent, sec_parent, crossover_pt, offspring_number
+    ):
+        return np.hstack(
+            (first_parent[: crossover_pt[0]], sec_parent[crossover_pt[0] :])
+        )
 
-    def mutate_population(self, population):
-        return np.abs(population - 1)
+    def mutate_population(self, population, n_mutations):
+
+        mutation_rows, mutation_cols = super(
+            BinaryGenAlgSolver, self
+        ).mutate_population(population, n_mutations)
+
+        population[mutation_rows, mutation_cols] = np.abs(population - 1)[
+            mutation_rows, mutation_cols
+        ]
+
+        return population
