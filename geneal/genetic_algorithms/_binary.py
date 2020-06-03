@@ -1,6 +1,6 @@
 import numpy as np
 
-from geneal.genetic_algorithms._genetic_algorithm import GenAlgSolver
+from geneal.genetic_algorithms.genetic_algorithm_base import GenAlgSolver
 
 
 class BinaryGenAlgSolver(GenAlgSolver):
@@ -14,6 +14,7 @@ class BinaryGenAlgSolver(GenAlgSolver):
         mutation_rate: float = 0.15,
         selection_rate: float = 0.5,
         n_crossover_points: int = 1,
+        random_state: int = None
     ):
         """
         :param fitness_function: can either be a fitness function or a class implementing a fitness function +
@@ -35,6 +36,7 @@ class BinaryGenAlgSolver(GenAlgSolver):
             mutation_rate=mutation_rate,
             selection_rate=selection_rate,
             n_crossover_points=n_crossover_points,
+            random_state=random_state
         )
 
     def initialize_population(self):

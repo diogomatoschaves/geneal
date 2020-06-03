@@ -1,24 +1,27 @@
 import datetime
+import logging
 import math
-import inspect
 from abc import ABCMeta, abstractmethod
 
 import numpy as np
 import matplotlib.pyplot as plt
 
-from geneal.utils.helpers import print_elapsed_time
+from geneal.utils.helpers import get_elapsed_time
+from geneal.utils.logger import configure_logger
 
 
-class GenAlgSolver(metaclass=ABCMeta):
+class GenAlgSolver:
+
     def __init__(
         self,
-        fitness_function,
         n_genes: int,
+        fitness_function=None,
         max_gen: int = 1000,
         pop_size: int = 100,
         mutation_rate: float = 0.15,
         selection_rate: float = 0.5,
         n_crossover_points: int = 1,
+        random_state: int = None
     ):
         """
         :param fitness_function: can either be a fitness function or
@@ -30,6 +33,17 @@ class GenAlgSolver(metaclass=ABCMeta):
         :param mutation_rate: rate at which random mutations occur
         :param selection_rate: percentage of the population to be selected for crossover
         """
+
+        if isinstance(random_state, int):
+            np.random.seed(random_state)
+
+        configure_logger()
+
+        if not fitness_function:
+            if not getattr(self, 'fitness_function'):
+                raise Exception("A fitness function must bre defined or provided as an argument")
+        else:
+            self.fitness_function = fitness_function
 
         self.n_genes = n_genes
         self.max_gen = max_gen
@@ -43,46 +57,6 @@ class GenAlgSolver(metaclass=ABCMeta):
         self.generations_ = 0
         self.best_fitness_ = 0
         self.best_individual_ = None
-
-        self.fitness_function = fitness_function
-        self.initialize_population = self.initialize_population
-        self.create_offspring = self.create_offspring
-        self.mutate_population = self.mutate_population
-
-        self.handle_overriding(fitness_function)
-
-    def handle_overriding(self, overriding_class):
-        if inspect.isclass(overriding_class):
-
-            # overriding_class = fitness_function()
-
-            try:
-                self.fitness_function = overriding_class.fitness_function
-            except AttributeError:
-                raise Exception(
-                    "Overriding class must implement a 'fitness_function' method"
-                )
-
-            try:
-                self.initialize_population = lambda: overriding_class.initialize_population(
-                    self
-                )
-            except AttributeError:
-                pass
-
-            try:
-                self.create_offspring = lambda *args: overriding_class.create_offspring(
-                    self, *args
-                )
-            except AttributeError:
-                pass
-
-            try:
-                self.mutate_population = lambda *args: overriding_class.mutate_population(
-                    self, *args
-                )
-            except AttributeError:
-                pass
 
     def solve(self):
 
@@ -118,7 +92,7 @@ class GenAlgSolver(metaclass=ABCMeta):
             gen_n += 1
 
             if gen_n % gen_interval == 0:
-                print(gen_n)
+                logging.info(gen_n)
 
             mean_fitness = np.append(mean_fitness, fitness.mean())
             max_fitness = np.append(max_fitness, fitness[0])
@@ -162,7 +136,7 @@ class GenAlgSolver(metaclass=ABCMeta):
 
         end_time = datetime.datetime.now()
 
-        time_str = print_elapsed_time(start_time, end_time)
+        time_str = get_elapsed_time(start_time, end_time)
 
         self.print_stats(time_str)
 
@@ -201,17 +175,17 @@ class GenAlgSolver(metaclass=ABCMeta):
 
     def print_stats(self, time_str):
 
-        print("\n#############################")
-        print("#\t\t\tSTATS\t\t\t#")
-        print("#############################\n\n")
-        print(f"Total running time: {time_str}\n\n")
-        print(f"Population size: {self.pop_size}")
-        print(f"Number variables: {self.n_genes}")
-        print(f"Selection rate: {self.selection_rate}")
-        print(f"Mutation rate: {self.mutation_rate}")
-        print(f"Number Generations: {self.generations_}\n")
-        print(f"Best fitness: {self.best_fitness_}")
-        print(f"Best individual: {self.best_individual_}")
+        logging.info("\n#############################")
+        logging.info("#\t\t\tSTATS\t\t\t#")
+        logging.info("#############################\n\n")
+        logging.info(f"Total running time: {time_str}\n\n")
+        logging.info(f"Population size: {self.pop_size}")
+        logging.info(f"Number variables: {self.n_genes}")
+        logging.info(f"Selection rate: {self.selection_rate}")
+        logging.info(f"Mutation rate: {self.mutation_rate}")
+        logging.info(f"Number Generations: {self.generations_}\n")
+        logging.info(f"Best fitness: {self.best_fitness_}")
+        logging.info(f"Best individual: {self.best_individual_}")
 
     @abstractmethod
     def initialize_population(self):

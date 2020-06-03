@@ -5,7 +5,7 @@ def get_input_dimensions(lst, n_dim=0):
         return n_dim
 
 
-def print_elapsed_time(start_time, end_time):
+def get_elapsed_time(start_time, end_time):
 
     runtime = (end_time - start_time).seconds
 

@@ -1,21 +1,23 @@
 import numpy as np
 
-from geneal.genetic_algorithms._genetic_algorithm import GenAlgSolver
+from geneal.genetic_algorithms.genetic_algorithm_base import GenAlgSolver
 from geneal.utils.helpers import get_input_dimensions
 
 
 class ContinuousGenAlgSolver(GenAlgSolver):
+
     def __init__(
         self,
-        fitness_function,
         n_genes: int,
+        fitness_function=None,
         max_gen: int = 1000,
         pop_size: int = 100,
         mutation_rate: float = 0.15,
         selection_rate: float = 0.5,
-        variables_limits=None,
+        variables_limits=(-10, 10),
         problem_type=float,
         n_crossover_points: int = 1,
+        random_state: int = None
     ):
         """
         :param fitness_function: can either be a fitness function or
@@ -40,6 +42,7 @@ class ContinuousGenAlgSolver(GenAlgSolver):
             mutation_rate=mutation_rate,
             selection_rate=selection_rate,
             n_crossover_points=n_crossover_points,
+            random_state=random_state
         )
 
         if not variables_limits:
