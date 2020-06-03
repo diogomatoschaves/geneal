@@ -4,6 +4,8 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+pytest = "*"
+pytest-cov = "*"
 
 [packages]
 numpy = "*"
@@ -12,6 +14,13 @@ scipy = "*"
 dcor = "*"
 geopandas = "*"
 numba = "*"
+networkx = "*"
+pyturf = "*"
+pandas = "*"
+descartes = "*"
+ipykernel = "*"
+plotly = "*"
+nbformat = "*"
 
 [requires]
 python_version = "3.7"

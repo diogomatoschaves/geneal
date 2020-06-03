@@ -81,6 +81,30 @@ class TSP:
 
         return res
 
+    # def mutate_population(self, population, n_mutations):
+    #
+    #     adjusted_n_mutations = np.ceil(n_mutations / self.n_genes).astype(int)
+    #
+    #     mutation_rows = np.random.choice(
+    #         np.arange(1, population.shape[0]),
+    #         adjusted_n_mutations,
+    #         replace=False
+    #     )
+    #
+    #     mutation_cols = (
+    #         np.ceil(np.random.rand(adjusted_n_mutations, 2) * self.n_genes) - 1
+    #     ).astype(int)
+    #
+    #     (
+    #         population[mutation_rows, mutation_cols[:, 0]],
+    #         population[mutation_rows, mutation_cols[:, 1]],
+    #     ) = (
+    #         population[mutation_rows, mutation_cols[:, 1]],
+    #         population[mutation_rows, mutation_cols[:, 0]],
+    #     )
+    #
+    #     return population
+
     def mutate_population(self, population, n_mutations):
 
         adjusted_n_mutations = np.ceil(n_mutations / self.n_genes).astype(int)

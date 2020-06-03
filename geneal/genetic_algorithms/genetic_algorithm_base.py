@@ -64,17 +64,23 @@ class GenAlgSolver(metaclass=ABCMeta):
                 )
 
             try:
-                self.initialize_population = lambda: overriding_class.initialize_population(self)
+                self.initialize_population = lambda: overriding_class.initialize_population(
+                    self
+                )
             except AttributeError:
                 pass
 
             try:
-                self.create_offspring = lambda *args: overriding_class.create_offspring(self, *args)
+                self.create_offspring = lambda *args: overriding_class.create_offspring(
+                    self, *args
+                )
             except AttributeError:
                 pass
 
             try:
-                self.mutate_population = lambda *args: overriding_class.mutate_population(self, *args)
+                self.mutate_population = lambda *args: overriding_class.mutate_population(
+                    self, *args
+                )
             except AttributeError:
                 pass
 
@@ -102,16 +108,17 @@ class GenAlgSolver(metaclass=ABCMeta):
 
         number_matings = math.floor((self.pop_size - self.pop_keep) / 2)
 
-        n_mutations = math.ceil(
-            (self.pop_size - 1) * self.n_genes * self.mutation_rate
-        )
+        n_mutations = math.ceil((self.pop_size - 1) * self.n_genes * self.mutation_rate)
+
+        gen_interval = round(self.max_gen / 10)
 
         gen_n = 0
         while True:
 
             gen_n += 1
 
-            print(gen_n)
+            if gen_n % gen_interval == 0:
+                print(gen_n)
 
             mean_fitness = np.append(mean_fitness, fitness.mean())
             max_fitness = np.append(max_fitness, fitness[0])
