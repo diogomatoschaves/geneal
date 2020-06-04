@@ -6,15 +6,15 @@ from geneal.genetic_algorithms.genetic_algorithm_base import GenAlgSolver
 class BinaryGenAlgSolver(GenAlgSolver):
     def __init__(
         self,
-        fitness_function,
         n_genes: int,
+        fitness_function=None,
         n_bits: int = 1,
         max_gen: int = 1000,
         pop_size: int = 100,
         mutation_rate: float = 0.15,
         selection_rate: float = 0.5,
         n_crossover_points: int = 1,
-        random_state: int = None
+        random_state: int = None,
     ):
         """
         :param fitness_function: can either be a fitness function or a class implementing a fitness function +
@@ -36,15 +36,14 @@ class BinaryGenAlgSolver(GenAlgSolver):
             mutation_rate=mutation_rate,
             selection_rate=selection_rate,
             n_crossover_points=n_crossover_points,
-            random_state=random_state
+            random_state=random_state,
         )
 
     def initialize_population(self):
         return np.round(np.random.rand(self.pop_size, self.n_genes))
 
-    def create_offspring(
-        self, first_parent, sec_parent, crossover_pt, offspring_number
-    ):
+    @staticmethod
+    def create_offspring(first_parent, sec_parent, crossover_pt, _):
         return np.hstack(
             (first_parent[: crossover_pt[0]], sec_parent[crossover_pt[0] :])
         )

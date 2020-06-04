@@ -5,7 +5,6 @@ from geneal.utils.helpers import get_input_dimensions
 
 
 class ContinuousGenAlgSolver(GenAlgSolver):
-
     def __init__(
         self,
         n_genes: int,
@@ -17,7 +16,7 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         variables_limits=(-10, 10),
         problem_type=float,
         n_crossover_points: int = 1,
-        random_state: int = None
+        random_state: int = None,
     ):
         """
         :param fitness_function: can either be a fitness function or
@@ -42,7 +41,7 @@ class ContinuousGenAlgSolver(GenAlgSolver):
             mutation_rate=mutation_rate,
             selection_rate=selection_rate,
             n_crossover_points=n_crossover_points,
-            random_state=random_state
+            random_state=random_state,
         )
 
         if not variables_limits:
@@ -70,6 +69,13 @@ class ContinuousGenAlgSolver(GenAlgSolver):
                 )
 
         return population
+
+    def get_crossover_points(self):
+        return np.sort(
+            np.random.choice(
+                np.arange(self.n_genes), self.n_crossover_points, replace=False
+            )
+        )
 
     def create_offspring(
         self, first_parent, sec_parent, crossover_pt, offspring_number

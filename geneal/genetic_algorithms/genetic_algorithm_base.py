@@ -6,12 +6,12 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
 
+from geneal.utils.exceptions import NoFitnessFunction
 from geneal.utils.helpers import get_elapsed_time
 from geneal.utils.logger import configure_logger
 
 
 class GenAlgSolver:
-
     def __init__(
         self,
         n_genes: int,
@@ -21,7 +21,7 @@ class GenAlgSolver:
         mutation_rate: float = 0.15,
         selection_rate: float = 0.5,
         n_crossover_points: int = 1,
-        random_state: int = None
+        random_state: int = None,
     ):
         """
         :param fitness_function: can either be a fitness function or
@@ -40,8 +40,12 @@ class GenAlgSolver:
         configure_logger()
 
         if not fitness_function:
-            if not getattr(self, 'fitness_function'):
-                raise Exception("A fitness function must bre defined or provided as an argument")
+            try:
+                getattr(self, "fitness_function")
+            except AttributeError:
+                raise NoFitnessFunction(
+                    "A fitness function must be defined or provided as an argument"
+                )
         else:
             self.fitness_function = fitness_function
 
@@ -156,7 +160,7 @@ class GenAlgSolver:
     def get_crossover_points(self):
         return np.sort(
             np.random.choice(
-                np.arange(self.n_genes), self.n_crossover_points, replace=False
+                np.arange(self.n_genes + 1), self.n_crossover_points, replace=False
             )
         )
 
@@ -191,10 +195,9 @@ class GenAlgSolver:
     def initialize_population(self):
         pass
 
+    @staticmethod
     @abstractmethod
-    def create_offspring(
-        self, first_parent, sec_parent, crossover_pt, offspring_number
-    ):
+    def create_offspring(first_parent, sec_parent, crossover_pt, offspring_number):
         pass
 
     def mutate_population(self, population, n_mutations):
