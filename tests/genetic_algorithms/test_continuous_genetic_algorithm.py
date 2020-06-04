@@ -1,18 +1,12 @@
 import pytest
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from geneal.applications.fitness_functions.continuous import (
     fitness_functions_continuous,
 )
 from geneal.genetic_algorithms import ContinuousGenAlgSolver
-from geneal.utils.helpers import get_input_dimensions
-
-
-@pytest.fixture
-def mock_matplotlib(mocker):
-    mocker.patch.object(plt, "show", lambda: None)
+from tests.mock_fixtures.mock_fixtures import mock_matplotlib, mock_logging
 
 
 class TestContinuousGenAlgSolver:
@@ -208,6 +202,7 @@ class TestContinuousGenAlgSolver:
     def test_solve(
         self,
         mock_matplotlib,
+        mock_logging,
         fitness_function,
         n_genes,
         expected_best_fitness,

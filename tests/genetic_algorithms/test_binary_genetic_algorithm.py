@@ -1,15 +1,10 @@
 import pytest
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from geneal.applications.fitness_functions.binary import fitness_functions_binary
 from geneal.genetic_algorithms import BinaryGenAlgSolver
-
-
-@pytest.fixture
-def mock_matplotlib(mocker):
-    mocker.patch.object(plt, "show", lambda: None)
+from tests.mock_fixtures.mock_fixtures import mock_matplotlib, mock_logging
 
 
 class TestBinaryGenAlgSolver:
@@ -216,6 +211,7 @@ class TestBinaryGenAlgSolver:
     def test_solve(
         self,
         mock_matplotlib,
+        mock_logging,
         fitness_function,
         n_genes,
         expected_best_fitness,
