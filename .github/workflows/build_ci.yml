@@ -46,8 +46,7 @@ jobs:
           pipenv install pytest --skip-lock
           pipenv install pytest-cov --skip-lock
           pipenv install pytest-mock --skip-lock
-          pipenv shell
-          python -m pytest --verbose --cov=./ --cov-report=xml
+          run pipenv python -m pytest --verbose --cov=./ --cov-report=xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
         with:
