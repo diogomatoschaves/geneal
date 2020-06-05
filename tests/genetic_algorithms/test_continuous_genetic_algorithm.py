@@ -51,7 +51,9 @@ class TestContinuousGenAlgSolver:
             random_state=42,
         )
 
-        population = continuous_solver.initialize_population(continuous_solver.pop_size, continuous_solver.n_genes)
+        population = continuous_solver.initialize_population(
+            continuous_solver.pop_size, continuous_solver.n_genes
+        )
 
         assert np.allclose(population, expected_result, rtol=1e-05)
 
@@ -83,7 +85,9 @@ class TestContinuousGenAlgSolver:
             random_state=42,
         )
 
-        population = continuous_solver.initialize_population(continuous_solver.pop_size, continuous_solver.n_genes)
+        population = continuous_solver.initialize_population(
+            continuous_solver.pop_size, continuous_solver.n_genes
+        )
 
         for i in range(population.shape[1]):
             assert population[:, i].min() > continuous_solver.variables_limits[i][0]
@@ -140,7 +144,9 @@ class TestContinuousGenAlgSolver:
             fitness_function=lambda x: x.sum(), n_genes=4, pop_size=5, random_state=42
         )
 
-        population = continuous_solver.initialize_population(continuous_solver.pop_size, continuous_solver.n_genes)
+        population = continuous_solver.initialize_population(
+            continuous_solver.pop_size, continuous_solver.n_genes
+        )
 
         expected_mutated_population = np.array(
             [
@@ -160,7 +166,7 @@ class TestContinuousGenAlgSolver:
         "fitness_function, n_genes, expected_best_fitness, expected_best_individual",
         [
             pytest.param(
-                1, 1,  -1.0817, np.array([0.0854]), id="continuous_fitness_function=1",
+                1, 1, -1.0817, np.array([0.0854]), id="continuous_fitness_function=1",
             ),
             pytest.param(
                 2,
@@ -173,22 +179,18 @@ class TestContinuousGenAlgSolver:
                 3,
                 2,
                 -0.0046863,
-                np.array([-0.009534,  0.0677]),
+                np.array([-0.009534, 0.0677]),
                 id="continuous_fitness_function=3",
             ),
             pytest.param(
                 4,
                 3,
                 15.407,
-                np.array([-4.00808176,  4.60078633, -3.29044853]),
+                np.array([-4.00808176, 4.60078633, -3.29044853]),
                 id="continuous_fitness_function=4",
             ),
             pytest.param(
-                5,
-                1,
-                227.423,
-                np.array([16.348]),
-                id="continuous_fitness_function=5",
+                5, 1, 227.423, np.array([16.348]), id="continuous_fitness_function=5",
             ),
             pytest.param(
                 6,

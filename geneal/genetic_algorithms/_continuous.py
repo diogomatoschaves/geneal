@@ -151,8 +151,8 @@ class ContinuousGenAlgSolver(GenAlgSolver):
             ContinuousGenAlgSolver, self
         ).mutate_population(population, n_mutations)
 
-        population[mutation_rows, mutation_cols] = self.initialize_population(self.pop_size, self.n_genes)[
-            mutation_rows, mutation_cols
-        ]
+        population[mutation_rows, mutation_cols] = self.initialize_population(
+            self.pop_size, self.n_genes
+        )[mutation_rows, mutation_cols]
 
         return population
