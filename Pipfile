@@ -6,6 +6,7 @@ verify_ssl = true
 [dev-packages]
 pytest = "*"
 pytest-cov = "*"
+pytest-mock = "*"
 
 [packages]
 numpy = "*"
@@ -21,7 +22,6 @@ descartes = "*"
 ipykernel = "*"
 plotly = "*"
 nbformat = "*"
-pytest-mock = "*"
 
 [requires]
 python_version = "3.7"

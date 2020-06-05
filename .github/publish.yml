@@ -1,0 +1,48 @@
+# This workflows will upload a Python Package using Twine when a release is created
+# For more information see: https://help.github.com/en/actions/language-and-framework-guides/using-python-with-github-actions#publishing-to-package-registries
+
+name: Upload pyturf to Pypi
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Change Pypi version
+        run: |
+          python ./scripts/update_version.py
+      - name: Commit files
+        env:
+          CI_USER: ${{ secrets.USERNAME }}
+          CI_EMAIL: ${{ secrets.EMAIL }}
+        run: |
+          git config --local user.email "$CI_EMAIL"
+          git config --local user.name "$CI_USER"
+          git commit -a -m "Update version.txt"
+      - name: Push code to master
+        env:
+          CI_USER: ${{ secrets.USERNAME }}
+          CI_EMAIL: ${{ secrets.EMAIL }}
+          GITHUB_REPOSITORY: ${{ secrets.REPOSITORY }}
+        run: git push "https://$CI_USER:$CI_TOKEN@github.com/$GITHUB_REPOSITORY.git" HEAD:master
+      - name: Set up Python
+        uses: actions/setup-python@v1
+        with:
+          python-version: '3.x'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install setuptools twine
+      - name: Build and publish
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          python setup.py sdist
+          twine upload dist/*
