@@ -51,7 +51,7 @@ class TestContinuousGenAlgSolver:
             random_state=42,
         )
 
-        population = continuous_solver.initialize_population()
+        population = continuous_solver.initialize_population(continuous_solver.pop_size, continuous_solver.n_genes)
 
         assert np.allclose(population, expected_result, rtol=1e-05)
 
@@ -83,7 +83,7 @@ class TestContinuousGenAlgSolver:
             random_state=42,
         )
 
-        population = continuous_solver.initialize_population()
+        population = continuous_solver.initialize_population(continuous_solver.pop_size, continuous_solver.n_genes)
 
         for i in range(population.shape[1]):
             assert population[:, i].min() > continuous_solver.variables_limits[i][0]
@@ -140,7 +140,7 @@ class TestContinuousGenAlgSolver:
             fitness_function=lambda x: x.sum(), n_genes=4, pop_size=5, random_state=42
         )
 
-        population = continuous_solver.initialize_population()
+        population = continuous_solver.initialize_population(continuous_solver.pop_size, continuous_solver.n_genes)
 
         expected_mutated_population = np.array(
             [

@@ -14,7 +14,7 @@ class TestBinaryGenAlgSolver:
             fitness_function=lambda x: x.sum(), n_genes=4, pop_size=5, random_state=42
         )
 
-        population = binary_solver.initialize_population()
+        population = binary_solver.initialize_population(binary_solver.pop_size, binary_solver.n_genes)
 
         expected_population = np.array(
             [
@@ -67,7 +67,7 @@ class TestBinaryGenAlgSolver:
             fitness_function=lambda x: x.sum(), n_genes=4, pop_size=5, random_state=42
         )
 
-        population = binary_solver.initialize_population()
+        population = binary_solver.initialize_population(binary_solver.pop_size, binary_solver.n_genes)
 
         expected_mutated_population = np.array(
             [

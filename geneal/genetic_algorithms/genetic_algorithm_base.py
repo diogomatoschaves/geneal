@@ -63,6 +63,12 @@ class GenAlgSolver:
         self.best_individual_ = None
 
     def solve(self):
+        """
+        Performs the genetic algorithm optimization according to the parameters
+        provided at initialization.
+
+        :return: None
+        """
 
         start_time = datetime.datetime.now()
 
@@ -70,7 +76,7 @@ class GenAlgSolver:
         max_fitness = np.ndarray(shape=(1, 0))
 
         # initialize the population
-        population = self.initialize_population()
+        population = self.initialize_population(self.pop_size, self.n_genes)
 
         fitness = self.calculate_fitness(population)
 
@@ -145,10 +151,23 @@ class GenAlgSolver:
         self.print_stats(time_str)
 
     def calculate_fitness(self, population):
+        """
+        Calculates the fitness of the population
+
+        :param population: population state at a given iteration
+        :return: the fitness of the current population
+        """
         return np.array(list(map(self.fitness_function, population)))
 
     @staticmethod
     def sort_by_fitness(fitness, population):
+        """
+        Sorts the population by its fitness.
+
+        :param fitness: fitness of the population
+        :param population: population state at a given iteration
+        :return: the sorted fitness array and sorted population array
+        """
 
         sorted_fitness = np.argsort(fitness)[::-1]
 
@@ -158,6 +177,11 @@ class GenAlgSolver:
         return fitness, population
 
     def get_crossover_points(self):
+        """
+        Retrieves random crossover points
+
+        :return: a numpy array with the crossover points
+        """
         return np.sort(
             np.random.choice(
                 np.arange(self.n_genes + 1), self.n_crossover_points, replace=False
@@ -166,6 +190,14 @@ class GenAlgSolver:
 
     @staticmethod
     def plot_results(mean_fitness, max_fitness, iterations):
+        """
+        Plots the evolution of the mean and max fitness of the population
+
+        :param mean_fitness: mean fitness array for each generation
+        :param max_fitness: max fitness array for each generation
+        :param iterations: total number of generations
+        :return: None
+        """
 
         plt.figure(figsize=(7, 7))
 
@@ -178,6 +210,12 @@ class GenAlgSolver:
         plt.show()
 
     def print_stats(self, time_str):
+        """
+        Prints the statistics of the optimization run
+
+        :param time_str: time string given by the method get_elapsed_time
+        :return: None
+        """
 
         logging.info("\n#############################")
         logging.info("#\t\t\tSTATS\t\t\t#")
@@ -192,15 +230,44 @@ class GenAlgSolver:
         logging.info(f"Best individual: {self.best_individual_}")
 
     @abstractmethod
-    def initialize_population(self):
+    def initialize_population(self, pop_size, n_genes):
+        """
+        Initializes the population of the problem. To be implemented in each child class.
+
+        :param pop_size: number of individuals in the population
+        :param n_genes: number of genes representing the problem. In case of the binary
+        solver, it represents the number of genes times the number of bits per gene
+        :return: a numpy array with a randomized initialized population
+        """
         pass
 
     @staticmethod
     @abstractmethod
     def create_offspring(first_parent, sec_parent, crossover_pt, offspring_number):
+        """
+        Creates an offspring from 2 parents. It uses the crossover point(s)
+        to determine how to perform the crossover. To be implemented on each child class.
+
+        :param first_parent: first parent's chromosome
+        :param sec_parent: second parent's chromosome
+        :param crossover_pt: point(s) at which to perform the crossover
+        :param offspring_number: whether it's the first or second offspring from a pair of parents.
+        Important if there's different logic to be applied to each case.
+        :return: the resulting offspring.
+        """
         pass
 
     def mutate_population(self, population, n_mutations):
+        """
+        Mutates the population according to a given user defined rule.
+        To be defined further in each child class. Each direct child class can call
+        this super method to retrieve the mutation rows and mutations columns
+
+        :param population: the population at a given iteration
+        :param n_mutations: number of mutations to be performed. This number is
+        calculated according to mutation_rate, but can be adjusted as needed inside this function
+        :return: an array with the mutation_rows and mutation_cols
+        """
 
         mutation_rows = np.ceil(
             np.random.rand(1, n_mutations) * (self.pop_size - 1)

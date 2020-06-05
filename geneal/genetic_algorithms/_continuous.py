@@ -54,23 +54,38 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         self.variables_limits = variables_limits
         self.problem_type = problem_type
 
-    def initialize_population(self):
+    def initialize_population(self, pop_size, n_genes):
+        """
+        Initializes the population of the problem according to the
+        population size and number of genes and according to the problem
+        type (either integers or floats).
 
-        population = np.empty(shape=(self.pop_size, self.n_genes))
+        :param pop_size: number of individuals in the population
+        :param n_genes: number of genes representing the problem.
+        :return: a numpy array with a randomized initialized population
+        """
+
+        population = np.empty(shape=(pop_size, n_genes))
 
         for i, variable_limits in enumerate(self.variables_limits):
             if self.problem_type == float:
                 population[:, i] = np.random.uniform(
-                    variable_limits[0], variable_limits[1], size=self.pop_size
+                    variable_limits[0], variable_limits[1], size=pop_size
                 )
             else:
                 population[:, i] = np.random.randint(
-                    variable_limits[0], variable_limits[1] + 1, size=self.pop_size
+                    variable_limits[0], variable_limits[1] + 1, size=pop_size
                 )
 
         return population
 
     def get_crossover_points(self):
+        """
+        Retrieves random crossover points
+
+        :return: a numpy array with the crossover points
+        """
+
         return np.sort(
             np.random.choice(
                 np.arange(self.n_genes), self.n_crossover_points, replace=False
@@ -80,6 +95,26 @@ class ContinuousGenAlgSolver(GenAlgSolver):
     def create_offspring(
         self, first_parent, sec_parent, crossover_pt, offspring_number
     ):
+        """
+        Creates an offspring from 2 parents. It performs the crossover
+        according the following rule:
+
+        p_new = first_parent[crossover_pt] + beta * (first_parent[crossover_pt] - sec_parent[crossover_pt])
+
+        offspring = [first_parent[:crossover_pt], p_new, sec_parent[crossover_pt + 1:]
+
+        where beta is a random number between 0 and 1, and can be either positive or negative
+        depending on if it's the first or second offspring
+
+        http://index-of.es/z0ro-Repository-3/Genetic-Algorithm/R.L.Haupt,%20S.E.Haupt%20-%20Practical%20Genetic%20Algorithms.pdf
+
+        :param first_parent: first parent's chromosome
+        :param sec_parent: second parent's chromosome
+        :param crossover_pt: point(s) at which to perform the crossover
+        :param offspring_number: whether it's the first or second offspring from a pair of parents.
+        Important if there's different logic to be applied to each case.
+        :return: the resulting offspring.
+        """
 
         crossover_pt = crossover_pt[0]
 
@@ -103,12 +138,20 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         )
 
     def mutate_population(self, population, n_mutations):
+        """
+        Mutates the population by randomizing specific positions of the
+        population individuals.
+
+        :param population: the population at a given iteration
+        :param n_mutations: number of mutations to be performed.
+        :return: the mutated population
+        """
 
         mutation_rows, mutation_cols = super(
             ContinuousGenAlgSolver, self
         ).mutate_population(population, n_mutations)
 
-        population[mutation_rows, mutation_cols] = self.initialize_population()[
+        population[mutation_rows, mutation_cols] = self.initialize_population(self.pop_size, self.n_genes)[
             mutation_rows, mutation_cols
         ]
 

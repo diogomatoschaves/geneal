@@ -39,16 +39,41 @@ class BinaryGenAlgSolver(GenAlgSolver):
             random_state=random_state,
         )
 
-    def initialize_population(self):
-        return np.round(np.random.rand(self.pop_size, self.n_genes))
+    def initialize_population(self, pop_size, n_genes):
+        """
+        Initializes the population of the problem according to the
+        population size and number of genes and outputs individuals
+        composed of 0's and 1's.
+
+        :param pop_size: number of individuals in the population
+        :param n_genes: number of genes representing the problem, which corresponds to
+        the number of genes times the number of bits per gene
+        :return: a numpy array with a randomized initialized population
+        """
+        return np.round(np.random.rand(pop_size, n_genes))
 
     @staticmethod
     def create_offspring(first_parent, sec_parent, crossover_pt, _):
+        """
+        Creates an offspring from 2 parents. It performs the crossover
+        according the following rule:
+
+        offspring = [first_parent[:crossover_pt], sec_parent[crossover_pt:]
+        """
+
         return np.hstack(
             (first_parent[: crossover_pt[0]], sec_parent[crossover_pt[0] :])
         )
 
     def mutate_population(self, population, n_mutations):
+        """
+        Mutates the population by randomizing specific positions of the
+        population individuals.
+
+        :param population: the population at a given iteration
+        :param n_mutations: number of mutations to be performed.
+        :return: the mutated population
+        """
 
         mutation_rows, mutation_cols = super(
             BinaryGenAlgSolver, self
