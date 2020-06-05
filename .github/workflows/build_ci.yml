@@ -21,27 +21,26 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install pipenv
-          pipenv install --ignore-pipfile
-      - name: Lint with black and commit changes
+          pipenv install
+      - name: Lint with black
         run: |
           pip install black
           black .
-      - name: Commit files
-        env:
-          CI_USER: ${{ secrets.USERNAME }}
-          CI_EMAIL: ${{ secrets.EMAIL }}
-          EDITOR: true
-        run: |
-          git config --local user.email "$CI_EMAIL"
-          git config --local user.name "$CI_USER"
-          git commit -a --fixup HEAD
-          git rebase -i HEAD~2 --autosquash
-      - name: Push code to master
+      - name: Commit files and push
         env:
           CI_USER: ${{ secrets.USERNAME }}
           CI_EMAIL: ${{ secrets.EMAIL }}
           GITHUB_REPOSITORY: ${{ secrets.REPOSITORY }}
-        run: git push "https://$CI_USER:$CI_TOKEN@github.com/$GITHUB_REPOSITORY.git" HEAD:master --force-with-lease
+          EDITOR: true
+        run: |
+          if [ git diff --exit-code ]
+            then
+              git config --local user.email "$CI_EMAIL"
+              git config --local user.name "$CI_USER"
+              git commit -a --fixup HEAD
+              git rebase -i HEAD~2 --autosquash
+              git push "https://$CI_USER:$CI_TOKEN@github.com/$GITHUB_REPOSITORY.git" HEAD:master --force-with-lease
+          fi
       - name: Test with pytest
         run: |
           pip install pytest
