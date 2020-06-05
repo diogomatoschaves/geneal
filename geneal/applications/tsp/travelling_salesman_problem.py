@@ -35,8 +35,7 @@ class TravellingSalesmanProblemSolver(ContinuousGenAlgSolver):
             0,
         )
 
-        res += self.G.edges[(241, individual[0])]["weight"]
-        res += self.G.edges[(individual[-1], 241)]["weight"]
+        res += self.G.edges[(individual[0], individual[-1])]["weight"]
 
         return -round(res, 2)
 
