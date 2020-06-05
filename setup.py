@@ -26,6 +26,7 @@ setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.5",
-    install_requires=["numpy"],
+    install_requires=["numpy", "matplotlib", "scipy", "networkx", "pyturf", "pandas",],
     test_requires=["pytest", "pytest-cov", "pytest-mock"],
+    keywords=["genetic algorithms", "ga", "optimization", "genetic programming"]
 )
