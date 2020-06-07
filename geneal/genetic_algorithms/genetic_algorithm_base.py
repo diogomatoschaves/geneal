@@ -119,12 +119,12 @@ class GenAlgSolver:
             for i in range(xp.shape[0]):
 
                 # create first offspring
-                population[self.pop_keep + ix[i], :] = self.create_offspring(
+                population[-1 - ix[i], :] = self.create_offspring(
                     population[ma[i], :], population[pa[i], :], xp[i], "first"
                 )
 
                 # create second offspring
-                population[self.pop_keep + ix[i] + 1, :] = self.create_offspring(
+                population[-1 - ix[i] - 1, :] = self.create_offspring(
                     population[pa[i], :], population[ma[i], :], xp[i], "second"
                 )
 
