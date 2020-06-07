@@ -1,22 +1,32 @@
+import time
 from functools import reduce
+import hashlib
+from collections import defaultdict
 
 import numpy as np
 import networkx as nx
+from numba import njit
 
 from geneal.genetic_algorithms import ContinuousGenAlgSolver
 
 
 class TravellingSalesmanProblemSolver(ContinuousGenAlgSolver):
-    def __init__(self, graph, *args, **kwargs):
+    def __init__(self, graph, mutation_strategy: str = "2-opt", *args, **kwargs):
 
         if "n_crossover_points" in kwargs:
             if kwargs["n_crossover_points"] != 2:
                 print("Defaulting 'n_crossover_points' to 2")
             kwargs.pop("n_crossover_points")
 
+        if "n_genes" not in kwargs:
+            kwargs["n_genes"] = len(graph.nodes)
+
         ContinuousGenAlgSolver.__init__(self, n_crossover_points=2, *args, **kwargs)
 
         self.G = graph
+        self.mutation_strategy = mutation_strategy
+        self.fitness_time = 0
+        self.chromosomes = defaultdict(int)
 
     def fitness_function(self, individual):
         """
@@ -28,16 +38,41 @@ class TravellingSalesmanProblemSolver(ContinuousGenAlgSolver):
         :return: the fitness of the individual
         """
 
-        res = reduce(
-            lambda total_length, city_pair: total_length
-            + self.G.edges[(city_pair[0], city_pair[1])]["weight"],
-            zip(individual, individual[1:]),
-            0,
-        )
+        start_time = time.time()
 
-        res += self.G.edges[(individual[0], individual[-1])]["weight"]
+        arr_hash = hashlib.sha1(individual).hexdigest()
 
-        return -round(res, 2)
+        if arr_hash in self.chromosomes:
+            res = self.chromosomes[arr_hash]
+
+        else:
+            res = reduce(
+                lambda total_length, city_pair: total_length
+                + self.G.edges[(city_pair[0], city_pair[1])]["weight"],
+                zip(individual, individual[1:]),
+                0,
+            )
+
+            res += self.G.edges[(individual[0], individual[-1])]["weight"]
+
+            res = -round(res, 2)
+
+            self.chromosomes[arr_hash] = res
+
+        # res = reduce(
+        #     lambda total_length, city_pair: total_length
+        #     + self.G.edges[(city_pair[0], city_pair[1])]["weight"],
+        #     zip(individual, individual[1:]),
+        #     0,
+        # )
+        #
+        # res += self.G.edges[(individual[0], individual[-1])]["weight"]
+        #
+        # res = -round(res, 2)
+
+        self.fitness_time += time.time() - start_time
+
+        return res
 
     def initialize_population(self, pop_size, n_genes):
         """
@@ -103,6 +138,20 @@ class TravellingSalesmanProblemSolver(ContinuousGenAlgSolver):
             adjusted_n_mutations, population
         )
 
+        if self.mutation_strategy == '2-opt':
+
+            return self.mutate_population_2_opt_search(population, mutation_rows)
+
+        elif self.mutation_strategy == 'swap':
+
+            return self.mutate_population_swap(population, mutation_rows, mutation_cols)
+
+        elif self.mutation_strategy == 'neighbour_heuristic':
+
+            return self.mutate_population_neighbour_heuristic(population, mutation_rows, mutation_cols)
+
+    def mutate_population_2_opt_search(self, population, mutation_rows):
+
         population[mutation_rows, :] = np.array(
             list(
                 map(
@@ -161,6 +210,55 @@ class TravellingSalesmanProblemSolver(ContinuousGenAlgSolver):
         )
 
         return route
+
+    def mutate_population_neighbour_heuristic(self, population, mutation_rows, mutation_cols):
+
+        population[mutation_rows, :] = np.array(
+            list(
+                map(
+                    lambda args: self.mutation_helper(*args),
+                    zip(population[mutation_rows, :], mutation_cols),
+                )
+            )
+        )
+
+        return population
+
+    def mutation_helper(self, row, mutation_cols):
+        # row[mutation_cols[0] : mutation_cols[1]] = np.flip(
+        #     row[mutation_cols[0] : mutation_cols[1]]
+        # )
+
+        chosen_gene_index = np.random.choice(np.arange(row.shape[0]), 1)[0]
+        chosen_gene = row[chosen_gene_index]
+
+        closest_neighbour = list(nx.neighbors(self.G, chosen_gene))[0]
+
+        chosen_neighbour = np.random.choice(
+            list(nx.neighbors(self.G, closest_neighbour))[:5], 1
+        )[0]
+
+        chosen_neighbour_index = np.argwhere(row == chosen_neighbour)[0, 0]
+
+        (row[chosen_gene_index], row[chosen_neighbour_index]) = (
+            row[chosen_neighbour_index],
+            row[chosen_gene_index],
+        )
+
+        return row
+
+    @staticmethod
+    def mutate_population_swap(population, mutation_rows, mutation_cols):
+
+        (
+            population[mutation_rows, mutation_cols[:, 0]],
+            population[mutation_rows, mutation_cols[:, 1]],
+        ) = (
+            population[mutation_rows, mutation_cols[:, 1]],
+            population[mutation_rows, mutation_cols[:, 0]],
+        )
+
+        return population
 
     @staticmethod
     def get_mut_rows_cols(n_mutations, population):
