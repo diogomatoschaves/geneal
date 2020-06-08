@@ -2,16 +2,29 @@ import time
 from functools import reduce
 import hashlib
 from collections import defaultdict
+import random
 
 import numpy as np
-import networkx as nx
 from numba import njit
 
+from geneal.applications.tsp.mutation_strategies import MutationStrategies
 from geneal.genetic_algorithms import ContinuousGenAlgSolver
+from geneal.utils.exceptions import InvalidInput
+
+mutation_options = {
+    '2-opt',
+    '3-opt',
+    'random_swap',
+    'random_inversion',
+    'random_gene_around_nearest_neighbour',
+    'random_gene_nearest_neighbour',
+    'worst_gene_random',
+    'worst_gene_nearest_neighbour',
+}
 
 
-class TravellingSalesmanProblemSolver(ContinuousGenAlgSolver):
-    def __init__(self, graph, mutation_strategy: str = "2-opt", *args, **kwargs):
+class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver):
+    def __init__(self, graph, mutation_strategy: str = "2-opt", number_searches: int = 5, *args, **kwargs):
 
         if "n_crossover_points" in kwargs:
             if kwargs["n_crossover_points"] != 2:
@@ -21,6 +34,7 @@ class TravellingSalesmanProblemSolver(ContinuousGenAlgSolver):
         if "n_genes" not in kwargs:
             kwargs["n_genes"] = len(graph.nodes)
 
+        MutationStrategies.__init__(self, number_searches=number_searches)
         ContinuousGenAlgSolver.__init__(self, n_crossover_points=2, *args, **kwargs)
 
         self.G = graph
@@ -58,17 +72,6 @@ class TravellingSalesmanProblemSolver(ContinuousGenAlgSolver):
             res = -round(res, 2)
 
             self.chromosomes[arr_hash] = res
-
-        # res = reduce(
-        #     lambda total_length, city_pair: total_length
-        #     + self.G.edges[(city_pair[0], city_pair[1])]["weight"],
-        #     zip(individual, individual[1:]),
-        #     0,
-        # )
-        #
-        # res += self.G.edges[(individual[0], individual[-1])]["weight"]
-        #
-        # res = -round(res, 2)
 
         self.fitness_time += time.time() - start_time
 
@@ -120,7 +123,7 @@ class TravellingSalesmanProblemSolver(ContinuousGenAlgSolver):
 
         return res
 
-    def mutate_population(self, population, n_mutations):
+    def mutate_population(self, population, n_mutations, **kwargs):
         """
         Mutates the population using a 2-opt rule hybrid. It selects the number of rows
         on which mutation will be applied, and then a applies a local search 2-opt rule
@@ -134,152 +137,72 @@ class TravellingSalesmanProblemSolver(ContinuousGenAlgSolver):
 
         adjusted_n_mutations = np.ceil(n_mutations / self.n_genes).astype(int)
 
-        mutation_rows, mutation_cols = self.get_mut_rows_cols(
+        if adjusted_n_mutations == 0:
+            return population
+
+        mutation_rows, mutation_cols = self.get_mutation_rows_cols(
             adjusted_n_mutations, population
         )
 
-        if self.mutation_strategy == '2-opt':
+        mutation_strategy = self.mutation_strategy
+        if "mutation_strategy" in kwargs:
+            mutation_strategy = kwargs["mutation_strategy"]
 
-            return self.mutate_population_2_opt_search(population, mutation_rows)
+        if mutation_strategy == '2-opt':
 
-        elif self.mutation_strategy == 'swap':
+            return self.random_inversion_mutation(population, mutation_rows, 2)
 
-            return self.mutate_population_swap(population, mutation_rows, mutation_cols)
+        if mutation_strategy == '3-opt':
 
-        elif self.mutation_strategy == 'neighbour_heuristic':
+            return self.random_inversion_mutation(population, mutation_rows, 3)
 
-            return self.mutate_population_neighbour_heuristic(population, mutation_rows, mutation_cols)
+        elif mutation_strategy == 'random_swap':
 
-    def mutate_population_2_opt_search(self, population, mutation_rows):
+            return self.random_swap_mutation(population, mutation_rows, mutation_cols)
 
-        population[mutation_rows, :] = np.array(
-            list(
-                map(
-                    lambda route: self.local_search(route),
-                    population[mutation_rows, :],
-                )
-            )
-        )
+        elif mutation_strategy == 'random_gene_around_nearest_neighbour':
 
-        return population
+            return self.random_gene_around_nearest_neighbour_mutation(population, mutation_rows)
 
-    def local_search(self, route):
+        elif mutation_strategy == 'random_gene_nearest_neighbour':
 
-        """
-        It applies a 2-opt local search to a particular route. It selects 10 combinations
-        of nodes on a given tour, performs a 2-opt node flipping,
-        calculates the fitness of the resulting new tours and then selects the one
-        with maximum fitness
+            return self.random_gene_nearest_neighbour_mutation(population, mutation_rows)
 
-        :param route: a given route to be mutated.
-        :return: the mutated route
-        """
+        elif mutation_strategy == 'worst_gene_random':
 
-        mutation_cols = np.sort(np.random.choice(route.shape[0], size=(10, 2)), axis=1)
+            return self.worst_gene_random_mutation(population, mutation_rows)
 
-        local_search_rows = np.array(
-            list(
-                map(
-                    lambda args: self.two_opt_swap(*args),
-                    zip(
-                        np.repeat(route[np.newaxis, :], mutation_cols.shape[0], axis=0),
-                        mutation_cols,
-                    ),
-                )
-            )
-        )
+        elif mutation_strategy == 'worst_gene_nearest_neighbour':
 
-        fitness = np.array(
-            list(map(lambda row: self.fitness_function(row), local_search_rows))
-        )
-        max_fitness = np.argmax(fitness)
+            return self.worst_gene_nearest_neighbour_mutation(population, mutation_rows)
 
-        return local_search_rows[max_fitness, :]
+        elif mutation_strategy == 'random_inversion':
 
-    @staticmethod
-    def two_opt_swap(route, mutation_cols):
-        """
-        Flips the nodes between 2 node positions for a given route.
+            return self.random_inversion_mutation(population, mutation_rows, np.random.randint(2, population.shape[1] / 2))
 
-        :param route: a given route to be mutated
-        :param mutation_cols: the position of the nodes to be flipped in between
-        :return: the mutated route
-        """
-        route[mutation_cols[0] : mutation_cols[1]] = np.flip(
-            route[mutation_cols[0] : mutation_cols[1]]
-        )
+        elif mutation_strategy == 'select_any_mutation':
 
-        return route
+            selected_strategy = random.sample(mutation_options, 1)[0]
 
-    def mutate_population_neighbour_heuristic(self, population, mutation_rows, mutation_cols):
+            return self.mutate_population(population, n_mutations, **{"mutation_strategy": selected_strategy})
 
-        population[mutation_rows, :] = np.array(
-            list(
-                map(
-                    lambda args: self.mutation_helper(*args),
-                    zip(population[mutation_rows, :], mutation_cols),
-                )
-            )
-        )
+        else:
+            raise(InvalidInput(f"{mutation_strategy} is an invalid mutation strategy"))
 
-        return population
+    def find_worst_gene(self, chromosome):
 
-    def mutation_helper(self, row, mutation_cols):
-        # row[mutation_cols[0] : mutation_cols[1]] = np.flip(
-        #     row[mutation_cols[0] : mutation_cols[1]]
-        # )
+        distances = [
+            self.G.edges[(chromosome[-1], chromosome[0])]["weight"]
+            + self.G.edges[(chromosome[0], chromosome[1])]["weight"],
+            *[
+                self.G.edges[(city_pair[0], city_pair[1])]["weight"] +
+                self.G.edges[(city_pair[1], city_pair[2])]["weight"]
+                for city_pair in zip(chromosome, chromosome[1:], chromosome[2:])
+            ],
+            self.G.edges[(chromosome[-2], chromosome[-1])]["weight"] +
+            self.G.edges[(chromosome[-1], chromosome[0])]["weight"]
+        ]
 
-        chosen_gene_index = np.random.choice(np.arange(row.shape[0]), 1)[0]
-        chosen_gene = row[chosen_gene_index]
+        worst_gene = np.argmax(distances)
 
-        closest_neighbour = list(nx.neighbors(self.G, chosen_gene))[0]
-
-        chosen_neighbour = np.random.choice(
-            list(nx.neighbors(self.G, closest_neighbour))[:5], 1
-        )[0]
-
-        chosen_neighbour_index = np.argwhere(row == chosen_neighbour)[0, 0]
-
-        (row[chosen_gene_index], row[chosen_neighbour_index]) = (
-            row[chosen_neighbour_index],
-            row[chosen_gene_index],
-        )
-
-        return row
-
-    @staticmethod
-    def mutate_population_swap(population, mutation_rows, mutation_cols):
-
-        (
-            population[mutation_rows, mutation_cols[:, 0]],
-            population[mutation_rows, mutation_cols[:, 1]],
-        ) = (
-            population[mutation_rows, mutation_cols[:, 1]],
-            population[mutation_rows, mutation_cols[:, 0]],
-        )
-
-        return population
-
-    @staticmethod
-    def get_mut_rows_cols(n_mutations, population):
-
-        mutation_rows = np.random.choice(
-            np.arange(1, population.shape[0]), n_mutations, replace=False
-        )
-
-        # mutation_cols = np.sort(np.random.choice(population.shape[1], size=(adjusted_n_mutations, 2)), axis=1)
-
-        mutation_cols = np.array(
-            list(
-                map(
-                    lambda x: np.sort(
-                        np.random.choice(
-                            np.arange(population.shape[1]), 2, replace=False
-                        )
-                    ),
-                    range(n_mutations),
-                )
-            )
-        ).astype(int)
-
-        return mutation_rows, mutation_cols
+        return worst_gene

@@ -61,6 +61,7 @@ class GenAlgSolver:
         self.generations_ = 0
         self.best_fitness_ = 0
         self.best_individual_ = None
+        self.population_ = None
 
     def solve(self):
         """
@@ -102,7 +103,8 @@ class GenAlgSolver:
             gen_n += 1
 
             if gen_n % gen_interval == 0:
-                logging.info(gen_n)
+                logging.info(f"Iteration: {gen_n}")
+                logging.info(f"Best fitness: {fitness[0]}")
 
             mean_fitness = np.append(mean_fitness, fitness.mean())
             max_fitness = np.append(max_fitness, fitness[0])
