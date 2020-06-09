@@ -2,7 +2,6 @@ import time
 from functools import reduce
 import hashlib
 from collections import defaultdict
-import random
 
 import numpy as np
 from numba import njit
@@ -11,16 +10,23 @@ from geneal.applications.tsp.mutation_strategies import MutationStrategies
 from geneal.genetic_algorithms import ContinuousGenAlgSolver
 from geneal.utils.exceptions import InvalidInput
 
+
 mutation_options = {
-    # '2-opt',
-    # '3-opt',
-    'random_swap',
-    'random_inversion',
-    # 'random_gene_around_nearest_neighbour',
-    # 'random_gene_nearest_neighbour',
-    # 'worst_gene_random',
-    # 'worst_gene_nearest_neighbour',
+    "random_swap",
+    "random_inversion",
 }
+
+allowed_mutations = {
+    "2-opt",
+    "random_swap",
+    "random_inversion",
+    "random_gene_around_nearest_neighbour",
+    "random_gene_nearest_neighbour",
+    "worst_gene_random",
+    "worst_gene_nearest_neighbour",
+    "select_any_mutation",
+}
+
 
 @njit
 def fitness_function(individual, edges):
@@ -35,7 +41,7 @@ def fitness_function(individual, edges):
 
     total_length = 0
     for i in range(individual.shape[0] - 1):
-        total_length += edges[(individual[i], individual[i+1])]
+        total_length += edges[(individual[i], individual[i + 1])]
 
     total_length += edges[(individual[0], individual[-1])]
 
@@ -43,7 +49,14 @@ def fitness_function(individual, edges):
 
 
 class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver):
-    def __init__(self, graph, mutation_strategy: str = "2-opt", n_searches: int = 5, *args, **kwargs):
+    def __init__(
+        self,
+        graph,
+        mutation_strategy: str = "2-opt",
+        n_searches: int = 5,
+        *args,
+        **kwargs,
+    ):
 
         if "n_crossover_points" in kwargs:
             if kwargs["n_crossover_points"] != 2:
@@ -51,11 +64,16 @@ class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver
             kwargs.pop("n_crossover_points")
 
         if "n_genes" in kwargs:
-            print(f"'n_genes' is determined by the number of nodes in G ({len(graph.nodes)})")
+            print(
+                f"'n_genes' is determined by the number of nodes in G ({len(graph.nodes)})"
+            )
         kwargs["n_genes"] = len(graph.nodes)
 
         MutationStrategies.__init__(self, n_searches=n_searches)
         ContinuousGenAlgSolver.__init__(self, n_crossover_points=2, *args, **kwargs)
+
+        if mutation_strategy not in allowed_mutations:
+            raise (InvalidInput(f"{mutation_strategy} is an invalid mutation strategy"))
 
         self.G = graph
         self.mutation_strategy = mutation_strategy
@@ -168,7 +186,7 @@ class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver
         if "mutation_strategy" in kwargs:
             mutation_strategy = kwargs["mutation_strategy"]
 
-        if mutation_strategy == '2-opt':
+        if mutation_strategy == "2-opt":
 
             return self.two_opt_mutation(population, mutation_rows)
 
@@ -176,38 +194,46 @@ class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver
         #
         #     return self.random_inversion_mutation(population, mutation_rows, 3)
 
-        elif mutation_strategy == 'random_swap':
+        elif mutation_strategy == "random_swap":
 
             return self.random_swap_mutation(population, mutation_rows, mutation_cols)
 
-        elif mutation_strategy == 'random_gene_around_nearest_neighbour':
+        elif mutation_strategy == "random_gene_around_nearest_neighbour":
 
-            return self.random_gene_around_nearest_neighbour_mutation(population, mutation_rows)
+            return self.random_gene_around_nearest_neighbour_mutation(
+                population, mutation_rows
+            )
 
-        elif mutation_strategy == 'random_gene_nearest_neighbour':
+        elif mutation_strategy == "random_gene_nearest_neighbour":
 
-            return self.random_gene_nearest_neighbour_mutation(population, mutation_rows)
+            return self.random_gene_nearest_neighbour_mutation(
+                population, mutation_rows
+            )
 
-        elif mutation_strategy == 'worst_gene_random':
+        elif mutation_strategy == "worst_gene_random":
 
             return self.worst_gene_random_mutation(population, mutation_rows)
 
-        elif mutation_strategy == 'worst_gene_nearest_neighbour':
+        elif mutation_strategy == "worst_gene_nearest_neighbour":
 
             return self.worst_gene_nearest_neighbour_mutation(population, mutation_rows)
 
-        elif mutation_strategy == 'random_inversion':
+        elif mutation_strategy == "random_inversion":
 
-            return self.random_inversion_mutation(population, mutation_rows, np.random.randint(2, population.shape[1] / 2))
+            return self.random_inversion_mutation(
+                population, mutation_rows, np.random.randint(2, population.shape[1] / 2)
+            )
 
-        elif mutation_strategy == 'select_any_mutation':
+        elif mutation_strategy == "select_any_mutation":
 
             selected_strategy = np.random.choice(list(mutation_options), 1)[0]
 
-            return self.mutate_population(population, n_mutations, **{"mutation_strategy": selected_strategy})
+            return self.mutate_population(
+                population, n_mutations, **{"mutation_strategy": selected_strategy}
+            )
 
         else:
-            raise(InvalidInput(f"{mutation_strategy} is an invalid mutation strategy"))
+            raise (InvalidInput(f"{mutation_strategy} is an invalid mutation strategy"))
 
     def find_worst_gene(self, chromosome):
 
@@ -215,12 +241,12 @@ class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver
             self.G.edges[(chromosome[-1], chromosome[0])]["weight"]
             + self.G.edges[(chromosome[0], chromosome[1])]["weight"],
             *[
-                self.G.edges[(city_pair[0], city_pair[1])]["weight"] +
-                self.G.edges[(city_pair[1], city_pair[2])]["weight"]
+                self.G.edges[(city_pair[0], city_pair[1])]["weight"]
+                + self.G.edges[(city_pair[1], city_pair[2])]["weight"]
                 for city_pair in zip(chromosome, chromosome[1:], chromosome[2:])
             ],
-            self.G.edges[(chromosome[-2], chromosome[-1])]["weight"] +
-            self.G.edges[(chromosome[-1], chromosome[0])]["weight"]
+            self.G.edges[(chromosome[-2], chromosome[-1])]["weight"]
+            + self.G.edges[(chromosome[-1], chromosome[0])]["weight"],
         ]
 
         worst_gene = np.argmax(distances)

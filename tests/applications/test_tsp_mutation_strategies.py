@@ -2,7 +2,9 @@ import pytest
 
 import numpy as np
 
-from geneal.applications.tsp.travelling_salesman_problem import TravellingSalesmanProblemSolver
+from geneal.applications.tsp.travelling_salesman_problem import (
+    TravellingSalesmanProblemSolver,
+)
 from tests.applications.fixtures.tsp_test_fixture import G
 
 
@@ -25,9 +27,7 @@ class TestMutationStrategies:
         pop_size = 8
 
         tsp_solver = TravellingSalesmanProblemSolver(
-            G,
-            pop_size=pop_size,
-            random_state=42,
+            G, pop_size=pop_size, random_state=42,
         )
 
         route = np.array([2, 1, 5, 7, 3, 4, 6, 8])
@@ -43,9 +43,7 @@ class TestMutationStrategies:
         pop_size = 8
 
         tsp_solver = TravellingSalesmanProblemSolver(
-            G,
-            pop_size=pop_size,
-            random_state=42,
+            G, pop_size=pop_size, random_state=42,
         )
 
         route = np.array([2, 1, 5, 7, 3, 4, 6, 8])
@@ -53,7 +51,9 @@ class TestMutationStrategies:
 
         expected_mutated_route = np.array([2, 8, 6, 7, 3, 4, 5, 1])
 
-        mutated_route = tsp_solver.random_inversion_mutation_helper(route, mutation_cols)
+        mutated_route = tsp_solver.random_inversion_mutation_helper(
+            route, mutation_cols
+        )
 
         assert np.allclose(mutated_route, expected_mutated_route)
 
@@ -62,16 +62,16 @@ class TestMutationStrategies:
         pop_size = 8
 
         tsp_solver = TravellingSalesmanProblemSolver(
-            G,
-            pop_size=pop_size,
-            random_state=42,
+            G, pop_size=pop_size, random_state=42,
         )
 
         route = np.array([2, 1, 5, 7, 3, 4, 6, 8])
 
         expected_mutated_route = np.array([2, 1, 5, 7, 6, 4, 3, 8])
 
-        mutated_route = tsp_solver.random_gene_around_nearest_neighbour_mutation_helper(route)
+        mutated_route = tsp_solver.random_gene_around_nearest_neighbour_mutation_helper(
+            route
+        )
 
         assert np.allclose(mutated_route, expected_mutated_route)
 
@@ -80,9 +80,7 @@ class TestMutationStrategies:
         pop_size = 8
 
         tsp_solver = TravellingSalesmanProblemSolver(
-            G,
-            pop_size=pop_size,
-            random_state=42,
+            G, pop_size=pop_size, random_state=42,
         )
 
         route = np.array([[2, 1, 5, 7, 3, 4, 6, 8]])
@@ -92,7 +90,9 @@ class TestMutationStrategies:
         mutation_rows = np.array([0])
         mutation_cols = np.array([[1, 4]])
 
-        mutated_route = tsp_solver.random_swap_mutation(route, mutation_rows, mutation_cols)
+        mutated_route = tsp_solver.random_swap_mutation(
+            route, mutation_rows, mutation_cols
+        )
 
         assert np.allclose(mutated_route, expected_mutated_route)
 
@@ -101,9 +101,7 @@ class TestMutationStrategies:
         pop_size = 8
 
         tsp_solver = TravellingSalesmanProblemSolver(
-            G,
-            pop_size=pop_size,
-            random_state=42,
+            G, pop_size=pop_size, random_state=42,
         )
 
         route = np.array([2, 1, 5, 7, 3, 4, 6, 8])
@@ -119,9 +117,7 @@ class TestMutationStrategies:
         pop_size = 8
 
         tsp_solver = TravellingSalesmanProblemSolver(
-            G,
-            pop_size=pop_size,
-            random_state=42,
+            G, pop_size=pop_size, random_state=42,
         )
 
         route = np.array([2, 1, 5, 7, 3, 4, 6, 8])
@@ -137,9 +133,7 @@ class TestMutationStrategies:
         pop_size = 8
 
         tsp_solver = TravellingSalesmanProblemSolver(
-            G,
-            pop_size=pop_size,
-            random_state=42,
+            G, pop_size=pop_size, random_state=42,
         )
 
         route = np.array([2, 1, 5, 7, 3, 4, 6, 8])

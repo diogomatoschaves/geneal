@@ -40,8 +40,6 @@ cities = {
 }
 
 
-
-
 G = nx.Graph()
 
 G.add_nodes_from(cities.keys())

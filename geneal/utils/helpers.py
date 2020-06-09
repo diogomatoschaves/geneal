@@ -29,7 +29,9 @@ def get_elapsed_time(start_time, end_time):
     return time_str
 
 
-def create_graph(cities_dict, distance_f, lon=lambda x: x["lon"], lat=lambda x: x["lat"]):
+def create_graph(
+    cities_dict, distance_f, lon=lambda x: x["lon"], lat=lambda x: x["lat"]
+):
 
     G = nx.Graph()
 

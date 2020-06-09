@@ -20,4 +20,6 @@ cities = {
     10: {"coords": [489.6, 442.0], "name": "Baton Rouge"},
 }
 
-G = create_graph(cities, dist, lon=lambda x: x["coords"][0], lat=lambda x: x["coords"][1])
+G = create_graph(
+    cities, dist, lon=lambda x: x["coords"][0], lat=lambda x: x["coords"][1]
+)

@@ -186,7 +186,7 @@ class TestContinuousGenAlgSolver:
                 4,
                 3,
                 17.0614,
-                np.array([-4.2077,  4.2812,  3.8996]),
+                np.array([-4.2077, 4.2812, 3.8996]),
                 id="continuous_fitness_function=4",
             ),
             pytest.param(
