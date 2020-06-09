@@ -1,6 +1,7 @@
 # geneal
 
 ![build_badge](https://github.com/diogomatoschaves/geneal/workflows/build/badge.svg)
+[![codecov](https://codecov.io/gh/diogomatoschaves/geneal/branch/master/graph/badge.svg)](https://codecov.io/gh/diogomatoschaves/geneal)
 [![PyPI version](https://badge.fury.io/py/geneal.svg)](https://badge.fury.io/py/geneal)
 
 `geneal` is a python library implementing genetic algorithms (GA). It has functionality for both binary and continuous GA,
