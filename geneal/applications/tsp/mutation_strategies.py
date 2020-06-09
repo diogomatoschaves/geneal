@@ -5,8 +5,8 @@ from numba import njit
 
 class MutationStrategies:
 
-    def __init__(self, number_searches: int = 5):
-        self.number_searches = number_searches
+    def __init__(self, n_searches: int = 5):
+        self.n_searches = n_searches
 
     def fitness_function(self, individual):
         pass
@@ -26,15 +26,7 @@ class MutationStrategies:
 
         mutation_size = kwargs["n_elements"] if "n_elements" in kwargs else 2
 
-        mutation_cols = np.apply_along_axis(
-            lambda gene_index: np.take(
-                np.arange(route.shape[0]),
-                np.arange(gene_index, gene_index + mutation_size),
-                mode="wrap"
-            ),
-            1,
-            np.random.choice(route.shape[0], size=(self.number_searches, 1))
-        )
+        mutation_cols = self.get_consecutive_mutation_cols(route, self.n_searches, mutation_size)
 
         local_search_rows = np.array(
             list(
@@ -58,6 +50,29 @@ class MutationStrategies:
 
         return local_search_rows[max_fitness, :] if fitness[max_fitness] > route_fitness else route
 
+    def two_opt_mutation(self, population, mutation_rows):
+
+        population[mutation_rows, :] = np.array(
+            list(
+                map(
+                    lambda route: self.two_opt_mutation_helper(route),
+                    population[mutation_rows, :],
+                )
+            )
+        )
+
+        return population
+
+    def two_opt_mutation_helper(self, route):
+
+        mutation_cols = self.get_consecutive_mutation_cols(route, 2, 2, replace=False)
+
+        rolled_arr = np.roll(route, route.shape[0] - mutation_cols[1, 1])
+
+        next_index = np.argwhere(rolled_arr == route[mutation_cols[0, 0]])[0, 0]
+
+        return np.hstack((rolled_arr[:next_index + 1], np.flip(rolled_arr[next_index + 1:])))
+
     def random_inversion_mutation(self, population, mutation_rows, n_elements):
         """
         Performs a series of random flips and returns route with
@@ -72,7 +87,7 @@ class MutationStrategies:
         population[mutation_rows, :] = np.array(
             list(
                 map(
-                    lambda route: self.local_search(route, self.flip_genes, **{"n_elements": n_elements}),
+                    lambda route: self.local_search(route, self.random_inversion_mutation_helper, **{"n_elements": n_elements}),
                     population[mutation_rows, :],
                 )
             )
@@ -81,7 +96,7 @@ class MutationStrategies:
         return population
 
     @staticmethod
-    def flip_genes(route, mutation_cols):
+    def random_inversion_mutation_helper(route, mutation_cols):
         """
         Flips the nodes between 2 node positions for a given route.
 
@@ -164,6 +179,28 @@ class MutationStrategies:
 
         return population
 
+    @staticmethod
+    def swap_genes(route, mutation_cols):
+        """
+        Performs a swap between elements along rows
+
+        :param population: the current population
+        :param mutation_rows: the rows to be mutated
+        :param mutation_cols: an matrix containing the indexes of the
+        items to be swapped along the rows
+        :return: the mutated population
+        """
+
+        (
+            route[mutation_cols[0]],
+            route[mutation_cols[1]],
+        ) = (
+            route[mutation_cols[1]],
+            route[mutation_cols[0]],
+        )
+
+        return route
+
     def worst_gene_random_mutation(self, population, mutation_rows):
 
         """
@@ -176,7 +213,7 @@ class MutationStrategies:
         :return: the mutated population
         """
 
-        mutation_cols = np.array(
+        population[mutation_rows, :] = np.array(
             list(
                 map(
                     lambda route: self.worst_gene_random_mutation_helper(route,),
@@ -185,7 +222,7 @@ class MutationStrategies:
             )
         )
 
-        return self.random_swap_mutation(population, mutation_rows, mutation_cols)
+        return population
 
     def worst_gene_random_mutation_helper(self, route):
         """
@@ -201,7 +238,7 @@ class MutationStrategies:
         while random_gene == worst_gene:
             random_gene = np.random.choice(np.arange(route.shape[0]), 1)[0]
 
-        return np.array([random_gene, worst_gene])
+        return self.swap_genes(route, np.array([random_gene, worst_gene]))
 
     def worst_gene_nearest_neighbour_mutation(self, population, mutation_rows):
         """
@@ -214,7 +251,7 @@ class MutationStrategies:
         :return: the mutated population
         """
 
-        mutation_cols = np.array(
+        population[mutation_rows, :] = np.array(
             list(
                 map(
                     lambda route: self.worst_gene_random_mutation_helper(route,),
@@ -223,7 +260,7 @@ class MutationStrategies:
             )
         )
 
-        return self.random_swap_mutation(population, mutation_rows, mutation_cols)
+        return population
 
     def worst_gene_nearest_neighbour_mutation_helper(self, route):
         """
@@ -247,7 +284,7 @@ class MutationStrategies:
 
         selected_gene = np.random.choice(gene_candidates, 1)[0]
 
-        return np.array([selected_gene, worst_gene])
+        return self.swap_genes(route, np.array([selected_gene, worst_gene]))
 
     def random_gene_nearest_neighbour_mutation(self, population, mutation_rows):
         """
@@ -334,3 +371,16 @@ class MutationStrategies:
         ).astype(int)
 
         return mutation_rows, mutation_cols
+
+    @staticmethod
+    def get_consecutive_mutation_cols(route, n_rows, slice_size, replace=True):
+
+        return np.apply_along_axis(
+            lambda gene_index: np.take(
+                np.arange(route.shape[0]),
+                np.arange(gene_index, gene_index + slice_size),
+                mode="wrap"
+            ),
+            1,
+            np.random.choice(route.shape[0], size=(n_rows, 1), replace=replace)
+        )

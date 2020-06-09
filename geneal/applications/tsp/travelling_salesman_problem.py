@@ -12,29 +12,49 @@ from geneal.genetic_algorithms import ContinuousGenAlgSolver
 from geneal.utils.exceptions import InvalidInput
 
 mutation_options = {
-    '2-opt',
-    '3-opt',
+    # '2-opt',
+    # '3-opt',
     'random_swap',
     'random_inversion',
-    'random_gene_around_nearest_neighbour',
-    'random_gene_nearest_neighbour',
-    'worst_gene_random',
-    'worst_gene_nearest_neighbour',
+    # 'random_gene_around_nearest_neighbour',
+    # 'random_gene_nearest_neighbour',
+    # 'worst_gene_random',
+    # 'worst_gene_nearest_neighbour',
 }
+
+@njit
+def fitness_function(individual, edges):
+    """
+    Implements the logic that calculates the fitness
+    measure of an individual. It sums all the costs of going
+    from node to node in the tour.
+
+    :param individual: chromosome of genes representing an individual
+    :return: the fitness of the individual
+    """
+
+    total_length = 0
+    for i in range(individual.shape[0] - 1):
+        total_length += edges[(individual[i], individual[i+1])]
+
+    total_length += edges[(individual[0], individual[-1])]
+
+    return -round(total_length, 2)
 
 
 class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver):
-    def __init__(self, graph, mutation_strategy: str = "2-opt", number_searches: int = 5, *args, **kwargs):
+    def __init__(self, graph, mutation_strategy: str = "2-opt", n_searches: int = 5, *args, **kwargs):
 
         if "n_crossover_points" in kwargs:
             if kwargs["n_crossover_points"] != 2:
                 print("Defaulting 'n_crossover_points' to 2")
             kwargs.pop("n_crossover_points")
 
-        if "n_genes" not in kwargs:
-            kwargs["n_genes"] = len(graph.nodes)
+        if "n_genes" in kwargs:
+            print(f"'n_genes' is determined by the number of nodes in G ({len(graph.nodes)})")
+        kwargs["n_genes"] = len(graph.nodes)
 
-        MutationStrategies.__init__(self, number_searches=number_searches)
+        MutationStrategies.__init__(self, n_searches=n_searches)
         ContinuousGenAlgSolver.__init__(self, n_crossover_points=2, *args, **kwargs)
 
         self.G = graph
@@ -150,11 +170,11 @@ class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver
 
         if mutation_strategy == '2-opt':
 
-            return self.random_inversion_mutation(population, mutation_rows, 2)
+            return self.two_opt_mutation(population, mutation_rows)
 
-        if mutation_strategy == '3-opt':
-
-            return self.random_inversion_mutation(population, mutation_rows, 3)
+        # elif mutation_strategy == '3-opt':
+        #
+        #     return self.random_inversion_mutation(population, mutation_rows, 3)
 
         elif mutation_strategy == 'random_swap':
 
@@ -182,7 +202,7 @@ class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver
 
         elif mutation_strategy == 'select_any_mutation':
 
-            selected_strategy = random.sample(mutation_options, 1)[0]
+            selected_strategy = np.random.choice(list(mutation_options), 1)[0]
 
             return self.mutate_population(population, n_mutations, **{"mutation_strategy": selected_strategy})
 
