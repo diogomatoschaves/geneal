@@ -1,6 +1,8 @@
 import networkx as nx
 import numpy as np
 
+from geneal.utils.helpers import create_graph
+
 
 def dist(xy1, xy2):
     return round(np.sqrt((xy1[0] - xy2[0]) ** 2 + (xy1[1] - xy2[1]) ** 2), 2)
@@ -40,18 +42,9 @@ cities = {
 }
 
 
-G = nx.Graph()
-
-G.add_nodes_from(cities.keys())
-nx.set_node_attributes(G, cities, "coords")
-
-for city, city_attr in cities.items():
-    edges = [
-        (city, to_city, dist(city_attr["coords"], to_city_attr["coords"]))
-        for to_city, to_city_attr in cities.items()
-        if to_city != city
-    ]
-
-    edges = sorted(edges, key=lambda x: x[2])
-
-    G.add_weighted_edges_from(edges)
+G = create_graph(
+    cities,
+    dist,
+    lon=lambda x: x["coords"][0],
+    lat=lambda x: x["coords"][1]
+)
