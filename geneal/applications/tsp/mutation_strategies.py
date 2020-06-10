@@ -116,6 +116,9 @@ class MutationStrategies:
         :return: the mutated route
         """
 
+        print(route)
+        print(mutation_cols)
+
         np.put(route, mutation_cols, np.flip(route[mutation_cols]), mode="wrap")
 
         return route
@@ -181,6 +184,9 @@ class MutationStrategies:
         items to be swapped along the rows
         :return: the mutated population
         """
+
+        print(mutation_rows)
+        print(mutation_cols)
 
         (
             population[mutation_rows, mutation_cols[:, 0]],
@@ -356,20 +362,30 @@ class MutationStrategies:
             )
 
     @staticmethod
-    def get_mutation_rows_cols(n_mutations, population):
+    def get_mutation_rows(n_mutations, population):
         """
-        Retrieves the mutation rows and columns for the current iteration
+        Retrieves the mutation rows for the current iteration
 
-        :param n_mutations:
-        :param population:
-        :return:
+        :param n_mutations: number of mutations to be performed
+        :param population: the current population
+        :return: the mutation rows
         """
 
         mutation_rows = np.random.choice(
             np.arange(1, population.shape[0]), n_mutations, replace=False
         )
 
-        # mutation_cols = np.sort(np.random.choice(population.shape[1], size=(adjusted_n_mutations, 2)), axis=1)
+        return mutation_rows
+
+    @staticmethod
+    def get_mutation_cols(n_mutations, population):
+        """
+        Retrieves the mutation columns for the current iteration
+
+        :param n_mutations: number of mutations to be performed
+        :param population: the current population
+        :return: the mutation columns
+        """
 
         mutation_cols = np.array(
             list(
@@ -384,7 +400,7 @@ class MutationStrategies:
             )
         ).astype(int)
 
-        return mutation_rows, mutation_cols
+        return mutation_cols
 
     @staticmethod
     def get_consecutive_mutation_cols(route, n_rows, slice_size, replace=True):

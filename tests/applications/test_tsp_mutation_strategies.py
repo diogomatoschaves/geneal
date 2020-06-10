@@ -10,18 +10,6 @@ from tests.applications.fixtures.tsp_test_fixture import G
 
 class TestMutationStrategies:
 
-    # @pytest.mark.parametrize(
-    #     "two_opt_mutation_helper, expected_mutated_route",
-    #     [
-    #         pytest.param(
-    #             "2-opt_mutation",
-    #             np.array([
-    #                 [ 7,  4,  3, 10,  2,  6,  9,  5]
-    #             ]),
-    #             id="2-opt",
-    #         ),
-    #     ],
-    # )
     def test_two_opt_mutation(self):
 
         pop_size = 8
