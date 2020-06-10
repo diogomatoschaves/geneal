@@ -220,7 +220,7 @@ associated cost (weight).
 
 ```python
 from geneal.applications.tsp.travelling_salesman_problem import TravellingSalesmanProblemSolver
-from geneal.applications.tsp.world_cities import G
+from geneal.applications.tsp.examples.world_capitals import G
 
 tsp_solver = TravellingSalesmanProblemSolver(
     graph=G,
@@ -232,7 +232,7 @@ Again, one can control the solver parameters as before, by providing them on the
 
 ```python
 from geneal.applications.tsp.travelling_salesman_problem import TravellingSalesmanProblemSolver
-from geneal.applications.tsp.world_cities import G
+from geneal.applications.tsp.examples.world_capitals import G
 
 tsp_solver = TravellingSalesmanProblemSolver(
     graph=G,

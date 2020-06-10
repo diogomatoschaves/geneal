@@ -95,7 +95,7 @@ class GenAlgSolver:
 
         n_mutations = math.ceil((self.pop_size - 1) * self.n_genes * self.mutation_rate)
 
-        gen_interval = round(self.max_gen / 10)
+        gen_interval = max(round(self.max_gen / 10), 1)
 
         gen_n = 0
         while True:

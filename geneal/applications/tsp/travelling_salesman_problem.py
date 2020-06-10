@@ -14,11 +14,7 @@ from geneal.genetic_algorithms import ContinuousGenAlgSolver
 from geneal.utils.exceptions import InvalidInput
 
 
-mutation_options = {
-    "random_swap",
-    "random_inversion",
-    "2-opt"
-}
+mutation_options = {"random_swap", "random_inversion", "2-opt"}
 
 allowed_mutations = {
     "2-opt",
@@ -55,7 +51,9 @@ def fitness_function(individual, edges):
 
 def convert_to_typed_dict(G):
 
-    edges_dict = Dict.empty(key_type=types.UniTuple(types.int64, 2), value_type=types.float64)
+    edges_dict = Dict.empty(
+        key_type=types.UniTuple(types.int64, 2), value_type=types.float64
+    )
 
     edges_dict.update({(edge[1], edge[0]): G.edges[edge]["weight"] for edge in G.edges})
     edges_dict.update({(edge[0], edge[1]): G.edges[edge]["weight"] for edge in G.edges})
@@ -86,7 +84,9 @@ class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver
 
             edges_dict = convert_to_typed_dict(graph)
 
-            self.fitness_function = lambda individual: fitness_function(individual, edges_dict)
+            self.fitness_function = lambda individual: fitness_function(
+                individual, edges_dict
+            )
 
         self.G = graph
         self.mutation_strategy = mutation_strategy
@@ -102,11 +102,16 @@ class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver
             kwargs.pop("n_crossover_points")
 
         if "n_genes" in kwargs:
-            print(
-                f"'n_genes' is determined by the number of nodes in G ({len(graph.nodes)})"
-            )
+            if kwargs["n_genes"] > len(graph.nodes):
+                print(
+                    f"'n_genes' can't be larger than the nodes in the graph. The number of genes "
+                    f"will default to {len(graph.nodes)}."
+                )
 
-        kwargs["n_genes"] = len(graph.nodes)
+                kwargs["n_genes"] = len(graph.nodes)
+
+        else:
+            kwargs["n_genes"] = len(graph.nodes)
 
         return kwargs
 
@@ -208,9 +213,7 @@ class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver
         if adjusted_n_mutations == 0:
             return population
 
-        mutation_rows = self.get_mutation_rows(
-            adjusted_n_mutations, population
-        )
+        mutation_rows = self.get_mutation_rows(adjusted_n_mutations, population)
 
         mutation_strategy = self.mutation_strategy
         if "mutation_strategy" in kwargs:
@@ -226,9 +229,7 @@ class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver
 
         elif mutation_strategy == "random_swap":
 
-            mutation_cols = self.get_mutation_cols(
-                adjusted_n_mutations, population
-            )
+            mutation_cols = self.get_mutation_cols(adjusted_n_mutations, population)
 
             return self.random_swap_mutation(population, mutation_rows, mutation_cols)
 
@@ -255,7 +256,9 @@ class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver
         elif mutation_strategy == "random_inversion":
 
             return self.random_inversion_mutation(
-                population, mutation_rows, np.random.choice(int(population.shape[1] / 2), 1)[0]
+                population,
+                mutation_rows,
+                np.random.choice(int(population.shape[1] / 2), 1)[0],
             )
 
         elif mutation_strategy == "select_any_mutation":

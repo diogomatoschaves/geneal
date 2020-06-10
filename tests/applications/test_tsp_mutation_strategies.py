@@ -9,7 +9,6 @@ from tests.applications.fixtures.tsp_test_fixture import G
 
 
 class TestMutationStrategies:
-
     def test_two_opt_mutation(self):
 
         pop_size = 8

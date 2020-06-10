@@ -4,9 +4,14 @@ import numpy as np
 
 from geneal.applications.tsp.travelling_salesman_problem import (
     TravellingSalesmanProblemSolver,
+    fitness_function,
 )
 from geneal.utils.exceptions import InvalidInput
-from tests.mock_fixtures.mock_fixtures import mock_matplotlib, mock_logging, mock_random_sample
+from tests.mock_fixtures.mock_fixtures import (
+    mock_matplotlib,
+    mock_logging,
+    mock_random_sample,
+)
 from tests.applications.fixtures.tsp_test_fixture import G
 
 
@@ -123,11 +128,11 @@ class TestTravellingSalesmanProblemSolver:
                 [np.array([2, 4]), np.array([[3], [9]]), np.array([[0], [8]])],
                 np.array(
                     [
-                        [ 9,  2,  6,  1,  8,  3, 10,  5,  4,  7],
-                        [ 1,  2,  9,  6,  4,  5,  8, 10,  7,  3],
-                        [10,  3,  1,  7,  5,  2,  8,  4,  6,  9],
-                        [ 2,  8,  7,  3,  9,  1,  4,  5,  6, 10],
-                        [10,  2,  3,  4,  7,  8,  1,  9,  5,  6],
+                        [9, 2, 6, 1, 8, 3, 10, 5, 4, 7],
+                        [1, 2, 9, 6, 4, 5, 8, 10, 7, 3],
+                        [10, 3, 1, 7, 5, 2, 8, 4, 6, 9],
+                        [2, 8, 7, 3, 9, 1, 4, 5, 6, 10],
+                        [10, 2, 3, 4, 7, 8, 1, 9, 5, 6],
                     ]
                 ),
                 id="2-opt",
@@ -137,11 +142,11 @@ class TestTravellingSalesmanProblemSolver:
                 [np.array([2, 4]), np.array([3, 9]), np.array([0, 8])],
                 np.array(
                     [
-                        [ 9,  2,  6,  1,  8,  3, 10,  5,  4,  7],
-                        [ 1,  2,  9,  6,  4,  5,  8, 10,  7,  3],
-                        [10,  3,  1,  5,  9,  6,  4,  8,  2,  7],
-                        [ 2,  8,  7,  3,  9,  1,  4,  5,  6, 10],
-                        [ 3,  6,  5,  9,  1,  8,  7,  4,  2, 10],
+                        [9, 2, 6, 1, 8, 3, 10, 5, 4, 7],
+                        [1, 2, 9, 6, 4, 5, 8, 10, 7, 3],
+                        [10, 3, 1, 5, 9, 6, 4, 8, 2, 7],
+                        [2, 8, 7, 3, 9, 1, 4, 5, 6, 10],
+                        [3, 6, 5, 9, 1, 8, 7, 4, 2, 10],
                     ]
                 ),
                 id="random_swap",
@@ -151,11 +156,11 @@ class TestTravellingSalesmanProblemSolver:
                 [np.array([2, 4]), np.array([7]), np.array([2])],
                 np.array(
                     [
-                        [ 9,  2,  6,  1,  8,  3, 10,  5,  4,  7],
-                        [ 1,  2,  9,  6,  4,  5,  8, 10,  7,  3],
-                        [10,  3,  1,  7,  9,  6,  4,  2,  8,  5],
-                        [ 2,  8,  7,  3,  9,  1,  4,  5,  6, 10],
-                        [10,  3,  1,  7,  9,  6,  4,  2,  8,  5]
+                        [9, 2, 6, 1, 8, 3, 10, 5, 4, 7],
+                        [1, 2, 9, 6, 4, 5, 8, 10, 7, 3],
+                        [10, 3, 1, 7, 9, 6, 4, 2, 8, 5],
+                        [2, 8, 7, 3, 9, 1, 4, 5, 6, 10],
+                        [10, 3, 1, 7, 9, 6, 4, 2, 8, 5],
                     ]
                 ),
                 id="random_gene_around_nearest_neighbour",
@@ -165,11 +170,11 @@ class TestTravellingSalesmanProblemSolver:
                 [np.array([2, 4]), np.array([4]), np.array([7])],
                 np.array(
                     [
-                        [ 9,  2,  6,  1,  8,  3, 10,  5,  4,  7],
-                        [ 1,  2,  9,  6,  4,  5,  8, 10,  7,  3],
-                        [10,  3,  4,  1,  7,  9,  6,  8,  2,  5],
-                        [ 2,  8,  7,  3,  9,  1,  4,  5,  6, 10],
-                        [ 2,  6,  5,  9,  7,  1,  8,  4,  3, 10]
+                        [9, 2, 6, 1, 8, 3, 10, 5, 4, 7],
+                        [1, 2, 9, 6, 4, 5, 8, 10, 7, 3],
+                        [10, 3, 4, 1, 7, 9, 6, 8, 2, 5],
+                        [2, 8, 7, 3, 9, 1, 4, 5, 6, 10],
+                        [2, 6, 5, 9, 7, 1, 8, 4, 3, 10],
                     ]
                 ),
                 id="random_gene_nearest_neighbour",
@@ -179,11 +184,11 @@ class TestTravellingSalesmanProblemSolver:
                 [np.array([2, 4]), np.array([0]), np.array([1])],
                 np.array(
                     [
-                        [ 9,  2,  6,  1,  8,  3, 10,  5,  4,  7],
-                        [ 1,  2,  9,  6,  4,  5,  8, 10,  7,  3],
-                        [ 8,  3,  1,  7,  9,  6,  4, 10,  2,  5],
-                        [ 2,  8,  7,  3,  9,  1,  4,  5,  6, 10],
-                        [ 2,  5,  6,  9,  1,  8,  7,  4,  3, 10]
+                        [9, 2, 6, 1, 8, 3, 10, 5, 4, 7],
+                        [1, 2, 9, 6, 4, 5, 8, 10, 7, 3],
+                        [8, 3, 1, 7, 9, 6, 4, 10, 2, 5],
+                        [2, 8, 7, 3, 9, 1, 4, 5, 6, 10],
+                        [2, 5, 6, 9, 1, 8, 7, 4, 3, 10],
                     ]
                 ),
                 id="worst_gene_random",
@@ -193,11 +198,11 @@ class TestTravellingSalesmanProblemSolver:
                 [np.array([2, 4]), np.array([9]), np.array([1])],
                 np.array(
                     [
-                        [ 9,  2,  6,  1,  8,  3, 10,  5,  4,  7],
-                        [ 1,  2,  9,  6,  4,  5,  8, 10,  7,  3],
-                        [10,  3,  1,  7,  9,  6,  4,  5,  2,  8],
-                        [ 2,  8,  7,  3,  9,  1,  4,  5,  6, 10],
-                        [ 2,  5,  6,  9,  1,  8,  7,  4,  3, 10]
+                        [9, 2, 6, 1, 8, 3, 10, 5, 4, 7],
+                        [1, 2, 9, 6, 4, 5, 8, 10, 7, 3],
+                        [10, 3, 1, 7, 9, 6, 4, 5, 2, 8],
+                        [2, 8, 7, 3, 9, 1, 4, 5, 6, 10],
+                        [2, 5, 6, 9, 1, 8, 7, 4, 3, 10],
                     ]
                 ),
                 id="worst_gene_nearest_neighbour",
@@ -207,35 +212,48 @@ class TestTravellingSalesmanProblemSolver:
                 [np.array([2, 4]), np.array([4]), np.array([[9]]), np.array([[3]])],
                 np.array(
                     [
-                        [ 9,  2,  6,  1,  8,  3, 10,  5,  4,  7],
-                        [ 1,  2,  9,  6,  4,  5,  8, 10,  7,  3],
-                        [ 3, 10,  5,  7,  9,  6,  4,  8,  2,  1],
-                        [ 2,  8,  7,  3,  9,  1,  4,  5,  6, 10],
-                        [ 2,  6,  5,  7,  8,  1,  9,  4,  3, 10]
+                        [9, 2, 6, 1, 8, 3, 10, 5, 4, 7],
+                        [1, 2, 9, 6, 4, 5, 8, 10, 7, 3],
+                        [3, 10, 5, 7, 9, 6, 4, 8, 2, 1],
+                        [2, 8, 7, 3, 9, 1, 4, 5, 6, 10],
+                        [2, 6, 5, 7, 8, 1, 9, 4, 3, 10],
                     ]
                 ),
                 id="random_inversion",
             ),
             pytest.param(
                 "select_any_mutation",
-                [np.array([2, 4]), np.array([2, 4]), np.array([4]), np.array([[9]]), np.array([[3]])],
+                [
+                    np.array([2, 4]),
+                    np.array([2, 4]),
+                    np.array([4]),
+                    np.array([[9]]),
+                    np.array([[3]]),
+                ],
                 np.array(
                     [
-                        [ 9,  2,  6,  1,  8,  3, 10,  5,  4,  7],
-                        [ 1,  2,  9,  6,  4,  5,  8, 10,  7,  3],
-                        [ 3, 10,  5,  7,  9,  6,  4,  8,  2,  1],
-                        [ 2,  8,  7,  3,  9,  1,  4,  5,  6, 10],
-                        [ 2,  6,  5,  7,  8,  1,  9,  4,  3, 10]
+                        [9, 2, 6, 1, 8, 3, 10, 5, 4, 7],
+                        [1, 2, 9, 6, 4, 5, 8, 10, 7, 3],
+                        [3, 10, 5, 7, 9, 6, 4, 8, 2, 1],
+                        [2, 8, 7, 3, 9, 1, 4, 5, 6, 10],
+                        [2, 6, 5, 7, 8, 1, 9, 4, 3, 10],
                     ]
                 ),
                 id="select_any_mutation",
             ),
-        ]
+        ],
     )
-    def test_mutation(self, mock_random_sample, mocker, mutation_strategy, side_effect, expected_mutated_population):
+    def test_mutation(
+        self,
+        mock_random_sample,
+        mocker,
+        mutation_strategy,
+        side_effect,
+        expected_mutated_population,
+    ):
 
         mocked_choice = mocker.Mock(side_effect=side_effect)
-        mocker.patch.object(np.random, 'choice', mocked_choice)
+        mocker.patch.object(np.random, "choice", mocked_choice)
 
         pop_size = 5
 
@@ -275,5 +293,44 @@ class TestTravellingSalesmanProblemSolver:
 
         assert excinfo.type == InvalidInput
         assert (
-                str(excinfo.value) == f"{mutation_strategy} is an invalid mutation strategy"
+            str(excinfo.value) == f"{mutation_strategy} is an invalid mutation strategy"
         )
+
+    def test_check_input(self):
+
+        tsp_solver = TravellingSalesmanProblemSolver(
+            G, n_crossover_points=3, random_state=42
+        )
+
+        assert tsp_solver.n_crossover_points == 2
+
+    @pytest.mark.parametrize(
+        "n_genes, expected_n_genes",
+        [
+            pytest.param(len(G.nodes) - 1, len(G.nodes) - 1),
+            pytest.param(len(G.nodes) + 1, len(G.nodes)),
+        ],
+    )
+    def test_n_genes_overriding(self, n_genes, expected_n_genes):
+
+        tsp_solver = TravellingSalesmanProblemSolver(
+            G, n_genes=n_genes, random_state=42
+        )
+
+        assert tsp_solver.n_genes == expected_n_genes
+
+    def test_numba_speedup(self, mocker):
+
+        mocked_fitness_function = mocker.patch(
+            "geneal.applications.tsp.travelling_salesman_problem.fitness_function"
+        )
+
+        tsp_solver = TravellingSalesmanProblemSolver(
+            G, numba_speedup=True, random_state=42
+        )
+
+        route = np.array([2, 6, 5, 9, 1, 8, 7, 4, 3, 10])
+
+        _ = tsp_solver.fitness_function(route)
+
+        mocked_fitness_function.assert_called()

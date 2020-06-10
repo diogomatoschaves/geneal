@@ -116,9 +116,6 @@ class MutationStrategies:
         :return: the mutated route
         """
 
-        print(route)
-        print(mutation_cols)
-
         np.put(route, mutation_cols, np.flip(route[mutation_cols]), mode="wrap")
 
         return route
@@ -184,9 +181,6 @@ class MutationStrategies:
         items to be swapped along the rows
         :return: the mutated population
         """
-
-        print(mutation_rows)
-        print(mutation_cols)
 
         (
             population[mutation_rows, mutation_cols[:, 0]],
