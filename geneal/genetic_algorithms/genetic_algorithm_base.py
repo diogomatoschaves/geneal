@@ -6,9 +6,12 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 import matplotlib.pyplot as plt
 
-from geneal.utils.exceptions import NoFitnessFunction
+from geneal.utils.exceptions import NoFitnessFunction, InvalidInput
 from geneal.utils.helpers import get_elapsed_time
 from geneal.utils.logger import configure_logger
+
+
+allowed_selection_strategies = {"roulette_wheel", "two_by_two", "random", "tournament"}
 
 
 class GenAlgSolver:
@@ -20,6 +23,8 @@ class GenAlgSolver:
         pop_size: int = 100,
         mutation_rate: float = 0.15,
         selection_rate: float = 0.5,
+        selection_strategy: str = "roulette_wheel",
+
         n_crossover_points: int = 1,
         random_state: int = None,
     ):
@@ -32,12 +37,45 @@ class GenAlgSolver:
         :param pop_size: population size
         :param mutation_rate: rate at which random mutations occur
         :param selection_rate: percentage of the population to be selected for crossover
+        :param selection_strategy: strategy to use for selection
+        :param n_crossover_points: number of slices to make for the crossover
+        :param random_state: optional. whether the random seed should be set
         """
 
         if isinstance(random_state, int):
             np.random.seed(random_state)
 
         configure_logger()
+
+        self.check_input_base(fitness_function, selection_strategy, pop_size)
+
+        self.selection_strategy = selection_strategy
+
+        self.n_genes = n_genes
+        self.max_gen = max_gen
+        self.pop_size = pop_size
+        self.mutation_rate = mutation_rate
+        self.selection_rate = selection_rate
+        self.n_crossover_points = n_crossover_points
+
+        self.pop_keep = math.floor(selection_rate * pop_size)
+
+        if self.pop_keep < 2:
+            self.pop_keep = 2
+
+        self.prob_intervals = self.get_selection_probabilities()
+
+        self.n_matings = math.floor((self.pop_size - self.pop_keep) / 2)
+        self.n_mutations = math.ceil(
+            (self.pop_size - 1) * self.n_genes * self.mutation_rate
+        )
+
+        self.generations_ = 0
+        self.best_fitness_ = 0
+        self.best_individual_ = None
+        self.population_ = None
+
+    def check_input_base(self, fitness_function, selection_strategy, pop_size):
 
         if not fitness_function:
             try:
@@ -49,19 +87,14 @@ class GenAlgSolver:
         else:
             self.fitness_function = fitness_function
 
-        self.n_genes = n_genes
-        self.max_gen = max_gen
-        self.pop_size = pop_size
-        self.mutation_rate = mutation_rate
-        self.selection_rate = selection_rate
-        self.n_crossover_points = n_crossover_points
+        if selection_strategy not in allowed_selection_strategies:
+            raise (
+                InvalidInput(f"{selection_strategy} is not a valid selection strategy. "
+                             f"Available options are {', '.join(allowed_selection_strategies)}.")
+            )
 
-        self.pop_keep = math.floor(selection_rate * pop_size)
-
-        self.generations_ = 0
-        self.best_fitness_ = 0
-        self.best_individual_ = None
-        self.population_ = None
+        if pop_size < 2:
+            raise (InvalidInput(f"The population size must be bigger than 2"))
 
     def solve(self):
         """
@@ -77,23 +110,11 @@ class GenAlgSolver:
         max_fitness = np.ndarray(shape=(1, 0))
 
         # initialize the population
-        population = self.initialize_population(self.pop_size, self.n_genes)
+        population = self.initialize_population()
 
         fitness = self.calculate_fitness(population)
 
         fitness, population = self.sort_by_fitness(fitness, population)
-
-        mating_prob = (
-            np.arange(1, self.pop_keep + 1) / np.arange(1, self.pop_keep + 1).sum()
-        )[::-1]
-
-        prob_intervals = np.array([0, *np.cumsum(mating_prob[: self.pop_keep + 1])])
-
-        find_parent = np.vectorize(lambda value: np.argmin(value > prob_intervals) - 1)
-
-        number_matings = math.floor((self.pop_size - self.pop_keep) / 2)
-
-        n_mutations = math.ceil((self.pop_size - 1) * self.n_genes * self.mutation_rate)
 
         gen_interval = max(round(self.max_gen / 10), 1)
 
@@ -109,13 +130,12 @@ class GenAlgSolver:
             mean_fitness = np.append(mean_fitness, fitness.mean())
             max_fitness = np.append(max_fitness, fitness[0])
 
-            ma = find_parent(np.random.rand(number_matings))
-            pa = find_parent(np.random.rand(number_matings))
+            ma, pa = self.select_parents(fitness)
 
-            ix = np.arange(0, self.pop_size - self.pop_keep - 1, 2)  # index of mate #1
+            ix = np.arange(0, self.pop_size - self.pop_keep - 1, 2)
 
             xp = np.array(
-                list(map(lambda _: self.get_crossover_points(), range(number_matings)))
+                list(map(lambda _: self.get_crossover_points(), range(self.n_matings)))
             )
 
             for i in range(xp.shape[0]):
@@ -130,7 +150,7 @@ class GenAlgSolver:
                     population[pa[i], :], population[ma[i], :], xp[i], "second"
                 )
 
-            population = self.mutate_population(population, n_mutations)
+            population = self.mutate_population(population, self.n_mutations)
 
             fitness = np.hstack((fitness[0], self.calculate_fitness(population[1:, :])))
 
@@ -160,6 +180,92 @@ class GenAlgSolver:
         :return: the fitness of the current population
         """
         return np.array(list(map(self.fitness_function, population)))
+
+    def select_parents(self, fitness):
+        """
+        Selects the parents according to a given selection strategy.
+        Options are
+
+        :param fitness: the fitness values of the population at a given iteration
+        :return: a tuple containing the selected 2 parents for each mating
+        """
+
+        ma, pa = None, None
+
+        if self.selection_strategy == "roulette_wheel":
+
+            ma = np.apply_along_axis(
+                self.roulette_wheel_selection, 1, np.random.rand(self.n_matings, 1)
+            )
+            pa = np.apply_along_axis(
+                self.roulette_wheel_selection, 1, np.random.rand(self.n_matings, 1)
+            )
+
+        elif self.selection_strategy == "two_by_two":
+
+            range_max = int(self.n_matings * 2)
+
+            ma = np.arange(range_max)[::2]
+            pa = np.arange(range_max)[1::2]
+
+            if ma.shape[0] > pa.shape[0]:
+                ma = ma[:-1]
+
+        elif self.selection_strategy == "random":
+
+            ma = np.apply_along_axis(
+                self.random_selection, 1, np.random.rand(self.n_matings, 1)
+            )
+            pa = np.apply_along_axis(
+                self.random_selection, 1, np.random.rand(self.n_matings, 1)
+            )
+
+        elif self.selection_strategy == "tournament":
+
+            range_max = int(self.n_matings * 2)
+
+            ma = self.tournament_selection(fitness, range_max)
+            pa = self.tournament_selection(fitness, range_max)
+
+        return ma, pa
+
+    def roulette_wheel_selection(self, value):
+        return np.argmin(value > self.prob_intervals) - 1
+
+    def random_selection(self, value):
+        return np.argmin(value > self.prob_intervals) - 1
+
+    def tournament_selection(self, fitness, range_max):
+
+        selected_individuals = np.random.choice(range_max, size=(self.n_matings, 3))
+
+        return np.array(
+            list(
+                map(
+                    lambda x: self.tournament_selection_helper(x, fitness),
+                    selected_individuals
+                )
+            )
+        )
+
+    def tournament_selection_helper(self, selected_individuals, fitness):
+
+        individuals_fitness = fitness[selected_individuals]
+
+        return selected_individuals[np.argmax(individuals_fitness)]
+
+    def get_selection_probabilities(self):
+
+        if self.selection_strategy == "roulette_wheel":
+
+            mating_prob = (
+                np.arange(1, self.pop_keep + 1) / np.arange(1, self.pop_keep + 1).sum()
+            )[::-1]
+
+            return np.array([0, *np.cumsum(mating_prob[: self.pop_keep + 1])])
+
+        elif self.selection_strategy == "random":
+            return np.linspace(0, 1, self.pop_keep + 1)
 
     @staticmethod
     def sort_by_fitness(fitness, population):
@@ -232,13 +338,10 @@ class GenAlgSolver:
         logging.info(f"Best individual: {self.best_individual_}")
 
     @abstractmethod
-    def initialize_population(self, pop_size, n_genes):
+    def initialize_population(self):
         """
         Initializes the population of the problem. To be implemented in each child class.
 
-        :param pop_size: number of individuals in the population
-        :param n_genes: number of genes representing the problem. In case of the binary
-        solver, it represents the number of genes times the number of bits per gene
         :return: a numpy array with a randomized initialized population
         """
         pass

@@ -43,9 +43,7 @@ class TestTravellingSalesmanProblemSolver:
             G, pop_size=pop_size, random_state=42,
         )
 
-        population = tsp_solver.initialize_population(
-            tsp_solver.pop_size, tsp_solver.n_genes
-        )
+        population = tsp_solver.initialize_population()
 
         assert population.shape[0] == pop_size
         assert population.shape[1] == n_genes
@@ -274,8 +272,6 @@ class TestTravellingSalesmanProblemSolver:
         mutated_population = tsp_solver.mutate_population(
             population, 2 * tsp_solver.n_genes
         )
-
-        print(mutated_population)
 
         assert np.allclose(mutated_population, expected_mutated_population, rtol=1e-5)
 

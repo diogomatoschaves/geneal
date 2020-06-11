@@ -13,6 +13,7 @@ class BinaryGenAlgSolver(GenAlgSolver):
         pop_size: int = 100,
         mutation_rate: float = 0.15,
         selection_rate: float = 0.5,
+        selection_strategy: str = "roulette_wheel",
         n_crossover_points: int = 1,
         random_state: int = None,
     ):
@@ -35,22 +36,20 @@ class BinaryGenAlgSolver(GenAlgSolver):
             pop_size=pop_size,
             mutation_rate=mutation_rate,
             selection_rate=selection_rate,
+            selection_strategy=selection_strategy,
             n_crossover_points=n_crossover_points,
             random_state=random_state,
         )
 
-    def initialize_population(self, pop_size, n_genes):
+    def initialize_population(self):
         """
         Initializes the population of the problem according to the
         population size and number of genes and outputs individuals
         composed of 0's and 1's.
 
-        :param pop_size: number of individuals in the population
-        :param n_genes: number of genes representing the problem, which corresponds to
-        the number of genes times the number of bits per gene
         :return: a numpy array with a randomized initialized population
         """
-        return np.round(np.random.rand(pop_size, n_genes))
+        return np.round(np.random.rand(self.pop_size, self.n_genes))
 
     @staticmethod
     def create_offspring(first_parent, sec_parent, crossover_pt, _):

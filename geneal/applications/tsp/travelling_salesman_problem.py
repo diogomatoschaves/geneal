@@ -150,20 +150,17 @@ class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver
 
         return res
 
-    def initialize_population(self, pop_size, n_genes):
+    def initialize_population(self):
         """
         Initializes the population of the problem. It creates a
         matrix of size (pop_size x n_genes) containing permutations of the nodes
         on each row.
 
-        :param pop_size: number of individuals in the population
-        :param n_genes: number of genes representing the problem. In case of the binary
-        solver, it represents the number of genes times the number of bits per gene
         :return: a numpy array with a randomized initialized population
         """
 
         population = np.repeat(
-            np.arange(1, n_genes + 1)[np.newaxis, :], pop_size, axis=0
+            np.arange(1, self.n_genes + 1)[np.newaxis, :], self.pop_size, axis=0
         )
 
         return np.array(list(map(lambda x: np.random.permutation(x), population)))

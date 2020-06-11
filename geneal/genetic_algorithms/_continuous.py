@@ -13,6 +13,7 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         pop_size: int = 100,
         mutation_rate: float = 0.15,
         selection_rate: float = 0.5,
+        selection_strategy: str = "roulette_wheel",
         variables_limits=(-10, 10),
         problem_type=float,
         n_crossover_points: int = 1,
@@ -40,6 +41,7 @@ class ContinuousGenAlgSolver(GenAlgSolver):
             pop_size=pop_size,
             mutation_rate=mutation_rate,
             selection_rate=selection_rate,
+            selection_strategy=selection_strategy,
             n_crossover_points=n_crossover_points,
             random_state=random_state,
         )
@@ -54,27 +56,25 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         self.variables_limits = variables_limits
         self.problem_type = problem_type
 
-    def initialize_population(self, pop_size, n_genes):
+    def initialize_population(self):
         """
         Initializes the population of the problem according to the
         population size and number of genes and according to the problem
         type (either integers or floats).
 
-        :param pop_size: number of individuals in the population
-        :param n_genes: number of genes representing the problem.
         :return: a numpy array with a randomized initialized population
         """
 
-        population = np.empty(shape=(pop_size, n_genes))
+        population = np.empty(shape=(self.pop_size, self.n_genes))
 
         for i, variable_limits in enumerate(self.variables_limits):
             if self.problem_type == float:
                 population[:, i] = np.random.uniform(
-                    variable_limits[0], variable_limits[1], size=pop_size
+                    variable_limits[0], variable_limits[1], size=self.pop_size
                 )
             else:
                 population[:, i] = np.random.randint(
-                    variable_limits[0], variable_limits[1] + 1, size=pop_size
+                    variable_limits[0], variable_limits[1] + 1, size=self.pop_size
                 )
 
         return population
@@ -151,8 +151,6 @@ class ContinuousGenAlgSolver(GenAlgSolver):
             ContinuousGenAlgSolver, self
         ).mutate_population(population, n_mutations)
 
-        population[mutation_rows, mutation_cols] = self.initialize_population(
-            self.pop_size, self.n_genes
-        )[mutation_rows, mutation_cols]
+        population[mutation_rows, mutation_cols] = self.initialize_population()[mutation_rows, mutation_cols]
 
         return population
