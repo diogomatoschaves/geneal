@@ -4,10 +4,10 @@ import pandas as pd
 
 
 try:
-    module_path = os.path.abspath(os.path.join(".."))
+    module_path = os.path.abspath(os.path.join("."))
     world_capitals = pd.read_csv(os.path.join(module_path, "data/world_capitals.csv"))
 except FileNotFoundError:
-    module_path = os.path.abspath(os.path.join("../.."))
+    module_path = os.path.abspath(os.path.join(".."))
     world_capitals = pd.read_csv(os.path.join(module_path, "data/world_capitals.csv"))
 
 

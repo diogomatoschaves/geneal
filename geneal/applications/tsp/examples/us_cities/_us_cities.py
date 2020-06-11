@@ -4,10 +4,10 @@ import pandas as pd
 
 
 try:
-    module_path = os.path.abspath(os.path.join(".."))
+    module_path = os.path.abspath(os.path.join("."))
     us_cities = pd.read_csv(os.path.join(module_path, "data/us_cities.csv"))
 except FileNotFoundError:
-    module_path = os.path.abspath(os.path.join("../.."))
+    module_path = os.path.abspath(os.path.join(".."))
     us_cities = pd.read_csv(os.path.join(module_path, "data/us_cities.csv"))
 
 us_cities.rename(columns={"LAT": "lat", "LON": "lon"}, inplace=True)
