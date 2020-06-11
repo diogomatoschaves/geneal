@@ -7,9 +7,10 @@ from geneal.applications.tsp.travelling_salesman_problem import (
     TravellingSalesmanProblemSolver,
 )
 from geneal.applications.tsp.helpers._plot_cities import plot_cities, add_trace
-from geneal.applications.tsp.examples.us_cities._us_cities import us_cities_dict
+from geneal.applications.tsp.examples.us_cities import us_cities_dict
 from geneal.applications.tsp.examples.cities import cities_dict
-from geneal.applications.tsp.examples.world_capitals._world_capitals import world_capitals_dict
+from geneal.applications.tsp.examples.world_capitals import world_capitals_dict
+from tests.mock_fixtures.mock_fixtures import mock_matplotlib, mock_logging, mock_plotly_figure_show
 
 
 class TestHelpersAndExamples:
@@ -56,7 +57,7 @@ class TestHelpersAndExamples:
     ):
 
         mocked_add_trace = mocker.patch(
-            "geneal.applications.tsp.helpers.plot_cities.add_trace"
+            "geneal.applications.tsp.helpers._plot_cities.add_trace"
         )
 
         with open(f"tests/applications/fixtures/{graph_file}.pickle", "rb") as f:

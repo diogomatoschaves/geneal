@@ -150,20 +150,6 @@ class TestTravellingSalesmanProblemSolver:
                 id="random_swap",
             ),
             pytest.param(
-                "random_gene_around_nearest_neighbour",
-                [np.array([2, 4]), np.array([7]), np.array([2])],
-                np.array(
-                    [
-                        [9, 2, 6, 1, 8, 3, 10, 5, 4, 7],
-                        [1, 2, 9, 6, 4, 5, 8, 10, 7, 3],
-                        [10, 3, 1, 7, 9, 6, 4, 2, 8, 5],
-                        [2, 8, 7, 3, 9, 1, 4, 5, 6, 10],
-                        [10, 3, 1, 7, 9, 6, 4, 2, 8, 5],
-                    ]
-                ),
-                id="random_gene_around_nearest_neighbour",
-            ),
-            pytest.param(
                 "random_gene_nearest_neighbour",
                 [np.array([2, 4]), np.array([4]), np.array([7])],
                 np.array(

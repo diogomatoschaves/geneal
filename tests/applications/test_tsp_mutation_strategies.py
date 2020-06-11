@@ -44,24 +44,6 @@ class TestMutationStrategies:
 
         assert np.allclose(mutated_route, expected_mutated_route)
 
-    def test_random_gene_around_nearest_neighbour_mutation(self):
-
-        pop_size = 8
-
-        tsp_solver = TravellingSalesmanProblemSolver(
-            G, pop_size=pop_size, random_state=42,
-        )
-
-        route = np.array([2, 1, 5, 7, 3, 4, 6, 8])
-
-        expected_mutated_route = np.array([2, 1, 5, 7, 6, 4, 3, 8])
-
-        mutated_route = tsp_solver.random_gene_around_nearest_neighbour_mutation_helper(
-            route
-        )
-
-        assert np.allclose(mutated_route, expected_mutated_route)
-
     def test_random_swap_mutation(self):
 
         pop_size = 8
