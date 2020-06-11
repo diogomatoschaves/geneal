@@ -1,7 +1,7 @@
 import networkx as nx
 import numpy as np
 
-from geneal.utils.helpers import create_graph
+from geneal.applications.tsp.helpers import create_graph
 
 
 def dist(xy1, xy2):

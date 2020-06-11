@@ -120,11 +120,11 @@ class MutationStrategies:
 
         return route
 
-    def random_gene_around_nearest_neighbour_mutation(self, population, mutation_rows):
+    def random_gene_nearest_neighbour_mutation(self, population, mutation_rows):
         """
         Random gene inserted beside nearest neighbour mutation (RGIBNNM)
 
-        4.27 - https://arxiv.org/pdf/1801.02827.pdf
+        4.2.7 - https://arxiv.org/pdf/1801.02827.pdf
 
         :param population: the current population
         :param mutation_rows: the indexes of the rows to be mutated
@@ -134,9 +134,7 @@ class MutationStrategies:
         population[mutation_rows, :] = np.array(
             list(
                 map(
-                    lambda route: self.random_gene_around_nearest_neighbour_mutation_helper(
-                        route
-                    ),
+                    lambda route: self.random_gene_nearest_neighbour_helper(route,),
                     population[mutation_rows, :],
                 )
             )
@@ -144,31 +142,42 @@ class MutationStrategies:
 
         return population
 
-    def random_gene_around_nearest_neighbour_mutation_helper(self, route):
+    def random_gene_nearest_neighbour_helper(self, route):
         """
-        Random gene inserted beside nearest neighbour mutation (RGIBNNM) helper function
+        Random gene inserted beside nearest neighbour mutation (RGIBNNM)
+        helper function
 
         :param route: current route to be mutated
         :return: the mutated route
         """
 
-        chosen_gene_index = np.random.choice(np.arange(route.shape[0]), 1)[0]
-        chosen_gene = route[chosen_gene_index]
+        random_gene = np.random.choice(route, 1)[0]
 
-        closest_neighbour = list(nx.neighbors(self.G, chosen_gene))[0]
+        random_gene_index = np.argwhere(route == random_gene)[0, 0]
 
-        chosen_neighbour = np.random.choice(
-            list(nx.neighbors(self.G, closest_neighbour))[:5], 1
-        )[0]
+        closest_neighbour = list(nx.neighbors(self.G, random_gene))[0]
 
-        chosen_neighbour_index = np.argwhere(route == chosen_neighbour)[0, 0]
+        closest_neighbour_index = np.argwhere(route == closest_neighbour)[0, 0]
 
-        (route[chosen_gene_index], route[chosen_neighbour_index]) = (
-            route[chosen_neighbour_index],
-            route[chosen_gene_index],
-        )
+        if random_gene_index < closest_neighbour_index:
+            return np.hstack(
+                (
+                    route[:random_gene_index],
+                    route[random_gene_index + 1 : closest_neighbour_index + 1],
+                    route[random_gene_index],
+                    route[closest_neighbour_index + 1 :],
+                )
+            )
 
-        return route
+        else:
+            return np.hstack(
+                (
+                    route[:closest_neighbour_index],
+                    route[random_gene_index],
+                    route[closest_neighbour_index:random_gene_index],
+                    route[random_gene_index + 1 :],
+                )
+            )
 
     @staticmethod
     def random_swap_mutation(population, mutation_rows, mutation_cols):
@@ -295,65 +304,6 @@ class MutationStrategies:
         selected_gene = np.random.choice(gene_candidates, 1)[0]
 
         return self.swap_genes(route, np.array([selected_gene, worst_gene]))
-
-    def random_gene_nearest_neighbour_mutation(self, population, mutation_rows):
-        """
-        Random gene inserted beside nearest neighbour mutation (RGIBNNM)
-
-        4.2.7 - https://arxiv.org/pdf/1801.02827.pdf
-
-        :param population: the current population
-        :param mutation_rows: the indexes of the rows to be mutated
-        :return: the mutated population
-        """
-
-        population[mutation_rows, :] = np.array(
-            list(
-                map(
-                    lambda route: self.random_gene_nearest_neighbour_helper(route,),
-                    population[mutation_rows, :],
-                )
-            )
-        )
-
-        return population
-
-    def random_gene_nearest_neighbour_helper(self, route):
-        """
-        Random gene inserted beside nearest neighbour mutation (RGIBNNM)
-        helper function
-
-        :param route: current route to be mutated
-        :return: the mutated route
-        """
-
-        random_gene = np.random.choice(route, 1)[0]
-
-        random_gene_index = np.argwhere(route == random_gene)[0, 0]
-
-        closest_neighbour = list(nx.neighbors(self.G, random_gene))[0]
-
-        closest_neighbour_index = np.argwhere(route == closest_neighbour)[0, 0]
-
-        if random_gene_index < closest_neighbour_index:
-            return np.hstack(
-                (
-                    route[:random_gene_index],
-                    route[random_gene_index + 1 : closest_neighbour_index + 1],
-                    route[random_gene_index],
-                    route[closest_neighbour_index + 1 :],
-                )
-            )
-
-        else:
-            return np.hstack(
-                (
-                    route[:closest_neighbour_index],
-                    route[random_gene_index],
-                    route[closest_neighbour_index:random_gene_index],
-                    route[random_gene_index + 1 :],
-                )
-            )
 
     @staticmethod
     def get_mutation_rows(n_mutations, population):

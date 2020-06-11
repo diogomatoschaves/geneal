@@ -20,7 +20,6 @@ allowed_mutations = {
     "2-opt",
     "random_swap",
     "random_inversion",
-    "random_gene_around_nearest_neighbour",
     "random_gene_nearest_neighbour",
     "worst_gene_random",
     "worst_gene_nearest_neighbour",
