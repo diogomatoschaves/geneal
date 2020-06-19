@@ -14,6 +14,8 @@ class BinaryGenAlgSolver(GenAlgSolver):
         mutation_rate: float = 0.15,
         selection_rate: float = 0.5,
         selection_strategy: str = "roulette_wheel",
+        verbose: bool = True,
+        plot_results: bool = True,
         n_crossover_points: int = 1,
         random_state: int = None,
     ):
@@ -26,6 +28,9 @@ class BinaryGenAlgSolver(GenAlgSolver):
         :param pop_size: population size
         :param mutation_rate: rate at which random mutations occur
         :param selection_rate: percentage of the population to be selected for crossover
+        :param selection_strategy: strategy to use for selection
+        :param verbose: whether to print iterations status
+        :param plot_results: whether to plot results of the run at the end
         """
 
         GenAlgSolver.__init__(
@@ -37,6 +42,8 @@ class BinaryGenAlgSolver(GenAlgSolver):
             mutation_rate=mutation_rate,
             selection_rate=selection_rate,
             selection_strategy=selection_strategy,
+            verbose=verbose,
+            plot_results=plot_results,
             n_crossover_points=n_crossover_points,
             random_state=random_state,
         )

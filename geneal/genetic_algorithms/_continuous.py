@@ -14,6 +14,8 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         mutation_rate: float = 0.15,
         selection_rate: float = 0.5,
         selection_strategy: str = "roulette_wheel",
+        verbose: bool = True,
+        plot_results: bool = True,
         variables_limits=(-10, 10),
         problem_type=float,
         n_crossover_points: int = 1,
@@ -28,6 +30,9 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         :param pop_size: population size
         :param mutation_rate: rate at which random mutations occur
         :param selection_rate: percentage of the population to be selected for crossover
+        :param selection_strategy: strategy to use for selection
+        :param verbose: whether to print iterations status
+        :param plot_results: whether to plot results of the run at the end
         :param variables_limits: limits for each variable [(x1_min, x1_max), (x2_min, x2_max), ...].
         If only one tuple is provided, then it is assumed the same for every variable
         :param problem_type: whether problem is of float or integer type
@@ -42,6 +47,8 @@ class ContinuousGenAlgSolver(GenAlgSolver):
             mutation_rate=mutation_rate,
             selection_rate=selection_rate,
             selection_strategy=selection_strategy,
+            verbose=verbose,
+            plot_results=plot_results,
             n_crossover_points=n_crossover_points,
             random_state=random_state,
         )
