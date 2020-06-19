@@ -219,10 +219,6 @@ class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver
 
             return self.two_opt_mutation(population, mutation_rows)
 
-        # elif mutation_strategy == '3-opt':
-        #
-        #     return self.random_inversion_mutation(population, mutation_rows, 3)
-
         elif mutation_strategy == "random_swap":
 
             mutation_cols = self.get_mutation_cols(adjusted_n_mutations, population)

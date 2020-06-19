@@ -24,7 +24,8 @@ class GenAlgSolver:
         mutation_rate: float = 0.15,
         selection_rate: float = 0.5,
         selection_strategy: str = "roulette_wheel",
-
+        verbose: bool = True,
+        plot_results: bool = True,
         n_crossover_points: int = 1,
         random_state: int = None,
     ):
@@ -38,6 +39,8 @@ class GenAlgSolver:
         :param mutation_rate: rate at which random mutations occur
         :param selection_rate: percentage of the population to be selected for crossover
         :param selection_strategy: strategy to use for selection
+        :param verbose: whether to print iterations status
+        :param plot_results: whether to plot results of the run at the end
         :param n_crossover_points: number of slices to make for the crossover
         :param random_state: optional. whether the random seed should be set
         """
@@ -57,6 +60,8 @@ class GenAlgSolver:
         self.mutation_rate = mutation_rate
         self.selection_rate = selection_rate
         self.n_crossover_points = n_crossover_points
+        self.verbose = verbose
+        self.plot_results = plot_results
 
         self.pop_keep = math.floor(selection_rate * pop_size)
 
@@ -123,7 +128,7 @@ class GenAlgSolver:
 
             gen_n += 1
 
-            if gen_n % gen_interval == 0:
+            if self.verbose and gen_n % gen_interval == 0:
                 logging.info(f"Iteration: {gen_n}")
                 logging.info(f"Best fitness: {fitness[0]}")
 
@@ -164,13 +169,15 @@ class GenAlgSolver:
         self.best_individual_ = population[0, :]
         self.population_ = population
 
-        self.plot_results(mean_fitness, max_fitness, gen_n)
+        if self.plot_results:
+            self.plot_fitness_results(mean_fitness, max_fitness, gen_n)
 
-        end_time = datetime.datetime.now()
+        if self.verbose:
+            end_time = datetime.datetime.now()
 
-        time_str = get_elapsed_time(start_time, end_time)
+            time_str = get_elapsed_time(start_time, end_time)
 
-        self.print_stats(time_str)
+            self.print_stats(time_str)
 
     def calculate_fitness(self, population):
         """
@@ -297,7 +304,7 @@ class GenAlgSolver:
         )
 
     @staticmethod
-    def plot_results(mean_fitness, max_fitness, iterations):
+    def plot_fitness_results(mean_fitness, max_fitness, iterations):
         """
         Plots the evolution of the mean and max fitness of the population
 
