@@ -1,3 +1,5 @@
+from typing import Sequence
+
 import numpy as np
 
 from geneal.genetic_algorithms.genetic_algorithm_base import GenAlgSolver
@@ -16,6 +18,7 @@ class BinaryGenAlgSolver(GenAlgSolver):
         selection_strategy: str = "roulette_wheel",
         verbose: bool = True,
         plot_results: bool = True,
+        excluded_genes: Sequence = None,
         n_crossover_points: int = 1,
         random_state: int = None,
     ):
@@ -44,6 +47,7 @@ class BinaryGenAlgSolver(GenAlgSolver):
             selection_strategy=selection_strategy,
             verbose=verbose,
             plot_results=plot_results,
+            excluded_genes=excluded_genes,
             n_crossover_points=n_crossover_points,
             random_state=random_state,
         )

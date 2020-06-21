@@ -1,3 +1,5 @@
+from typing import Sequence
+
 import numpy as np
 
 from geneal.genetic_algorithms.genetic_algorithm_base import GenAlgSolver
@@ -16,6 +18,7 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         selection_strategy: str = "roulette_wheel",
         verbose: bool = True,
         plot_results: bool = True,
+        excluded_genes: Sequence = None,
         variables_limits=(-10, 10),
         problem_type=float,
         n_crossover_points: int = 1,
@@ -49,6 +52,7 @@ class ContinuousGenAlgSolver(GenAlgSolver):
             selection_strategy=selection_strategy,
             verbose=verbose,
             plot_results=plot_results,
+            excluded_genes=excluded_genes,
             n_crossover_points=n_crossover_points,
             random_state=random_state,
         )
@@ -158,6 +162,8 @@ class ContinuousGenAlgSolver(GenAlgSolver):
             ContinuousGenAlgSolver, self
         ).mutate_population(population, n_mutations)
 
-        population[mutation_rows, mutation_cols] = self.initialize_population()[mutation_rows, mutation_cols]
+        population[mutation_rows, mutation_cols] = self.initialize_population()[
+            mutation_rows, mutation_cols
+        ]
 
         return population

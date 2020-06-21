@@ -10,7 +10,11 @@ from geneal.applications.tsp.helpers._plot_cities import plot_cities, add_trace
 from geneal.applications.tsp.examples.us_cities import us_cities_dict
 from geneal.applications.tsp.examples.cities import cities_dict
 from geneal.applications.tsp.examples.world_capitals import world_capitals_dict
-from tests.mock_fixtures.mock_fixtures import mock_matplotlib, mock_logging, mock_plotly_figure_show
+from tests.mock_fixtures.mock_fixtures import (
+    mock_matplotlib,
+    mock_logging,
+    mock_plotly_figure_show,
+)
 
 
 class TestHelpersAndExamples:

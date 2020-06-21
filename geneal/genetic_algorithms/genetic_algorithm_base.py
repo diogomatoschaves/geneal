@@ -2,11 +2,13 @@ import datetime
 import logging
 import math
 from abc import ABCMeta, abstractmethod
+from typing import Sequence
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 from geneal.utils.exceptions import NoFitnessFunction, InvalidInput
+from geneal.utils.exceptions_messages import exception_messages
 from geneal.utils.helpers import get_elapsed_time
 from geneal.utils.logger import configure_logger
 
@@ -26,6 +28,7 @@ class GenAlgSolver:
         selection_strategy: str = "roulette_wheel",
         verbose: bool = True,
         plot_results: bool = True,
+        excluded_genes: Sequence = None,
         n_crossover_points: int = 1,
         random_state: int = None,
     ):
@@ -50,11 +53,15 @@ class GenAlgSolver:
 
         configure_logger()
 
-        self.check_input_base(fitness_function, selection_strategy, pop_size)
+        self.n_genes = n_genes
+        self.allowed_mutation_genes = np.arange(self.n_genes)
+
+        self.check_input_base(
+            fitness_function, selection_strategy, pop_size, excluded_genes
+        )
 
         self.selection_strategy = selection_strategy
 
-        self.n_genes = n_genes
         self.max_gen = max_gen
         self.pop_size = pop_size
         self.mutation_rate = mutation_rate
@@ -80,7 +87,9 @@ class GenAlgSolver:
         self.best_individual_ = None
         self.population_ = None
 
-    def check_input_base(self, fitness_function, selection_strategy, pop_size):
+    def check_input_base(
+        self, fitness_function, selection_strategy, pop_size, excluded_genes
+    ):
 
         if not fitness_function:
             try:
@@ -93,13 +102,26 @@ class GenAlgSolver:
             self.fitness_function = fitness_function
 
         if selection_strategy not in allowed_selection_strategies:
-            raise (
-                InvalidInput(f"{selection_strategy} is not a valid selection strategy. "
-                             f"Available options are {', '.join(allowed_selection_strategies)}.")
+            raise InvalidInput(
+                exception_messages["InvalidSelectionStrategy"](
+                    selection_strategy, allowed_selection_strategies
+                )
             )
 
         if pop_size < 2:
-            raise (InvalidInput(f"The population size must be bigger than 2"))
+            raise (InvalidInput(exception_messages["InvalidPopulationSize"]))
+
+        if isinstance(excluded_genes, (list, tuple, np.ndarray)):
+            self.allowed_mutation_genes = [
+                item
+                for item in self.allowed_mutation_genes
+                if item not in excluded_genes
+            ]
+
+        elif excluded_genes is not None:
+            raise InvalidInput(
+                exception_messages["InvalidExcludedGenes"](excluded_genes)
+            )
 
     def solve(self):
         """
@@ -250,7 +272,7 @@ class GenAlgSolver:
             list(
                 map(
                     lambda x: self.tournament_selection_helper(x, fitness),
-                    selected_individuals
+                    selected_individuals,
                 )
             )
         )
@@ -381,12 +403,12 @@ class GenAlgSolver:
         :return: an array with the mutation_rows and mutation_cols
         """
 
-        mutation_rows = np.ceil(
-            np.random.rand(1, n_mutations) * (self.pop_size - 1)
-        ).astype(int)
+        mutation_rows = np.random.choice(
+            np.arange(1, self.pop_size), n_mutations, replace=True
+        )
 
-        mutation_cols = (
-            np.ceil(np.random.rand(1, n_mutations) * self.n_genes) - 1
-        ).astype(int)
+        mutation_cols = np.random.choice(
+            self.allowed_mutation_genes, n_mutations, replace=True
+        )
 
         return [mutation_rows, mutation_cols]

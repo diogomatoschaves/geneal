@@ -145,14 +145,16 @@ class TestContinuousGenAlgSolver:
         expected_mutated_population = np.array(
             [
                 [-2.50919762, -6.88010959, -9.58831011, -6.3319098],
-                [-6.58951753, -8.83832776, 9.39819704, -3.91515514],
-                [-8.69896814, 7.32352292, -9.31222958, 0.49512863],
-                [1.97316968, 2.02230023, -5.75321779, 0.93420559],
-                [-6.87962719, 4.16145156, -6.36350066, -4.1754172],
+                [9.01428613, -8.83832776, 9.39819704, -3.91515514],
+                [4.63987884, 7.32352292, -8.04655772, 0.49512863],
+                [1.97316968, 2.02230023, -5.75321779, 8.18640804],
+                [-6.87962719, 9.31264066, -6.36350066, -4.1754172],
             ]
         )
 
         mutated_population = continuous_solver.mutate_population(population, 5)
+
+        print(mutated_population)
 
         assert np.allclose(mutated_population, expected_mutated_population, rtol=1e-5)
 
@@ -160,32 +162,23 @@ class TestContinuousGenAlgSolver:
         "fitness_function, n_genes, expected_best_fitness, expected_best_individual",
         [
             pytest.param(
-                1,
-                1,
-                -1.0817,
-                np.array([0.40]),
-
-                id="continuous_fitness_function=1",
+                1, 1, -1.0817, np.array([0.40]), id="continuous_fitness_function=1",
             ),
             pytest.param(
-                2,
-                1,
-                -0.10,
-                np.array([-0.87]),
-                id="continuous_fitness_function=2",
+                2, 1, -0.653, np.array([-0.87]), id="continuous_fitness_function=2",
             ),
             pytest.param(
                 3,
                 2,
                 -4.09,
-                np.array([2.02, 0.06]),
+                np.array([2.011, -1.361]),
                 id="continuous_fitness_function=3",
             ),
             pytest.param(
                 4,
                 3,
                 17.0614,
-                np.array([1.97, -3.71, -2.67]),
+                np.array([-5.280, -3.915, -5.394]),
                 id="continuous_fitness_function=4",
             ),
             pytest.param(
@@ -195,7 +188,7 @@ class TestContinuousGenAlgSolver:
                 6,
                 2,
                 18.2684,
-                np.array([9, 8]),
+                np.array([10.420, -5.753]),
                 id="continuous_fitness_function=6",
             ),
         ],
