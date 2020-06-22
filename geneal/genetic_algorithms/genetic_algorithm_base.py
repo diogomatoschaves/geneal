@@ -78,9 +78,7 @@ class GenAlgSolver:
         self.prob_intervals = self.get_selection_probabilities()
 
         self.n_matings = math.floor((self.pop_size - self.pop_keep) / 2)
-        self.n_mutations = math.ceil(
-            (self.pop_size - 1) * self.n_genes * self.mutation_rate
-        )
+        self.n_mutations = self.get_number_mutations()
 
         self.generations_ = 0
         self.best_fitness_ = 0
@@ -295,6 +293,11 @@ class GenAlgSolver:
 
         elif self.selection_strategy == "random":
             return np.linspace(0, 1, self.pop_keep + 1)
+
+    def get_number_mutations(self):
+        return math.ceil(
+            (self.pop_size - 1) * self.n_genes * self.mutation_rate
+        )
 
     @staticmethod
     def sort_by_fitness(fitness, population):
