@@ -17,6 +17,7 @@ class BinaryGenAlgSolver(GenAlgSolver):
         selection_rate: float = 0.5,
         selection_strategy: str = "roulette_wheel",
         verbose: bool = True,
+        show_stats: bool = True,
         plot_results: bool = True,
         excluded_genes: Sequence = None,
         n_crossover_points: int = 1,
@@ -33,6 +34,7 @@ class BinaryGenAlgSolver(GenAlgSolver):
         :param selection_rate: percentage of the population to be selected for crossover
         :param selection_strategy: strategy to use for selection
         :param verbose: whether to print iterations status
+        :param show_stats: whether to print stats at the end
         :param plot_results: whether to plot results of the run at the end
         """
 
@@ -46,6 +48,7 @@ class BinaryGenAlgSolver(GenAlgSolver):
             selection_rate=selection_rate,
             selection_strategy=selection_strategy,
             verbose=verbose,
+            show_stats=show_stats,
             plot_results=plot_results,
             excluded_genes=excluded_genes,
             n_crossover_points=n_crossover_points,

@@ -27,6 +27,7 @@ class GenAlgSolver:
         selection_rate: float = 0.5,
         selection_strategy: str = "roulette_wheel",
         verbose: bool = True,
+        show_stats: bool = True,
         plot_results: bool = True,
         excluded_genes: Sequence = None,
         n_crossover_points: int = 1,
@@ -43,6 +44,7 @@ class GenAlgSolver:
         :param selection_rate: percentage of the population to be selected for crossover
         :param selection_strategy: strategy to use for selection
         :param verbose: whether to print iterations status
+        :param show_stats: whether to print stats at the end
         :param plot_results: whether to plot results of the run at the end
         :param n_crossover_points: number of slices to make for the crossover
         :param random_state: optional. whether the random seed should be set
@@ -68,6 +70,7 @@ class GenAlgSolver:
         self.selection_rate = selection_rate
         self.n_crossover_points = n_crossover_points
         self.verbose = verbose
+        self.show_stats = show_stats
         self.plot_results = plot_results
 
         self.pop_keep = math.floor(selection_rate * pop_size)
@@ -81,9 +84,10 @@ class GenAlgSolver:
         self.n_mutations = self.get_number_mutations()
 
         self.generations_ = 0
-        self.best_fitness_ = 0
         self.best_individual_ = None
+        self.best_fitness_ = 0
         self.population_ = None
+        self.fitness_ = None
 
     def check_input_base(
         self, fitness_function, selection_strategy, pop_size, excluded_genes
@@ -185,14 +189,15 @@ class GenAlgSolver:
                 break
 
         self.generations_ = gen_n
-        self.best_fitness_ = fitness[0]
         self.best_individual_ = population[0, :]
+        self.best_fitness_ = fitness[0]
         self.population_ = population
+        self.fitness_ = fitness
 
         if self.plot_results:
             self.plot_fitness_results(mean_fitness, max_fitness, gen_n)
 
-        if self.verbose:
+        if self.show_stats:
             end_time = datetime.datetime.now()
 
             time_str = get_elapsed_time(start_time, end_time)
@@ -211,7 +216,17 @@ class GenAlgSolver:
     def select_parents(self, fitness):
         """
         Selects the parents according to a given selection strategy.
-        Options are
+        Options are:
+
+        roulette_wheel: Selects individuals from mating pool giving
+        higher probabilities to fitter individuals.
+
+        two_by_two: Pairs fittest individuals two by two
+
+        random: Selects individuals from mating pool randomly.
+
+        tournament: Selects individuals by choosing groups of 3 candidate
+        individuals and then selecting the fittest one from the 3.
 
         :param fitness: the fitness values of the population at a given iteration
         :return: a tuple containing the selected 2 parents for each mating
@@ -257,12 +272,31 @@ class GenAlgSolver:
         return ma, pa
 
     def roulette_wheel_selection(self, value):
+        """
+        Performs roulette wheel selection
+
+        :param value: random value defining which individual is selected
+        :return: the selected individual
+        """
         return np.argmin(value > self.prob_intervals) - 1
 
     def random_selection(self, value):
+        """
+        Performs random selection
+
+        :param value: random value defining which individual is selected
+        :return: the selected individual
+        """
         return np.argmin(value > self.prob_intervals) - 1
 
     def tournament_selection(self, fitness, range_max):
+        """
+        Performs tournament selection.
+
+        :param fitness: the fitness values of the population at a given iteration
+        :param range_max: range of individuals that can be selected for the tournament
+        :return: the selected individuals
+        """
 
         selected_individuals = np.random.choice(range_max, size=(self.n_matings, 3))
 
@@ -275,7 +309,17 @@ class GenAlgSolver:
             )
         )
 
-    def tournament_selection_helper(self, selected_individuals, fitness):
+    @staticmethod
+    def tournament_selection_helper(selected_individuals, fitness):
+        """
+        Helper for tournament selection method. Selects the fittest individual
+        from a pool of candidate individuals
+
+        :param selected_individuals: group of candidate individuals for
+        tournament selection
+        :param fitness: the fitness values of the population at a given iteration
+        :return: the selected individual
+        """
 
         individuals_fitness = fitness[selected_individuals]
 
@@ -295,9 +339,7 @@ class GenAlgSolver:
             return np.linspace(0, 1, self.pop_keep + 1)
 
     def get_number_mutations(self):
-        return math.ceil(
-            (self.pop_size - 1) * self.n_genes * self.mutation_rate
-        )
+        return math.ceil((self.pop_size - 1) * self.n_genes * self.mutation_rate)
 
     @staticmethod
     def sort_by_fitness(fitness, population):
@@ -414,4 +456,4 @@ class GenAlgSolver:
             self.allowed_mutation_genes, n_mutations, replace=True
         )
 
-        return [mutation_rows, mutation_cols]
+        return mutation_rows, mutation_cols
