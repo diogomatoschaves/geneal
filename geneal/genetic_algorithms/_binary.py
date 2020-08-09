@@ -63,7 +63,17 @@ class BinaryGenAlgSolver(GenAlgSolver):
 
         :return: a numpy array with a randomized initialized population
         """
-        return np.round(np.random.rand(self.pop_size, self.n_genes))
+
+        bits_array = []
+
+        for _ in range(self.pop_size):
+            bits = np.zeros(self.n_genes)
+            bits[: np.random.randint(0, self.n_genes)] = 1
+            np.random.shuffle(bits)
+
+            bits_array.append(bits)
+
+        return np.array(bits_array)
 
     @staticmethod
     def create_offspring(first_parent, sec_parent, crossover_pt, _):
