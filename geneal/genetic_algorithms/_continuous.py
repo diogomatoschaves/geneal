@@ -143,9 +143,14 @@ class ContinuousGenAlgSolver(GenAlgSolver):
                 first_parent[crossover_pt] - sec_parent[crossover_pt]
             )
         else:
+            variable_limits = self.variables_limits[crossover_pt]
+
             p_new = first_parent[crossover_pt] - np.round(
                 beta * (first_parent[crossover_pt] - sec_parent[crossover_pt])
             )
+
+            if not variable_limits[0] <= p_new <= variable_limits[1]:
+                p_new = np.random.randint(variable_limits[0], variable_limits[1] + 1)
 
         return np.hstack(
             (first_parent[:crossover_pt], p_new, sec_parent[crossover_pt + 1 :])
