@@ -449,7 +449,7 @@ class GenAlgSolver:
         """
 
         mutation_rows = np.random.choice(
-            np.arange(1, self.pop_size), n_mutations, replace=True
+            self.pop_size, n_mutations, replace=True
         )
 
         mutation_cols = np.random.choice(
