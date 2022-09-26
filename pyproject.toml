@@ -1,0 +1,29 @@
+[tool.poetry]
+name = "genetic-algorithm"
+version = "0.4.1"
+description = "Python Genetic Algorithms library"
+authors = ["Diogo Matos Chaves <diogo_chaves@hotmail.com>"]
+license = "MIT License"
+
+[tool.poetry.dependencies]
+python = ">=3.7.1,<3.11"
+numpy = "1.21.6"
+matplotlib = "3.5.3"
+numba = "0.56.2"
+scipy = "1.7.3"
+networkx = "2.6.3"
+pyturf = "0.5.0"
+pandas = "1.3.5"
+descartes = "1.1.0"
+ipykernel = "6.16.0"
+plotly = "5.10.0"
+nbformat = "5.6.1"
+
+[tool.poetry.dev-dependencies]
+pytest = "^7.1.3"
+pytest-cov = "^3.0.0"
+pytest-mock = "^3.8.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
