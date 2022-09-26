@@ -95,13 +95,13 @@ class TestContinuousGenAlgSolver:
             pytest.param(
                 np.array([0]),
                 np.array([1.37454012, 2, -4, 0]),
-                np.array([2.95071431, -3.0, 5.0, 0.0]),
+                np.array([1.62545988, -3.0, 5.0, 0.0]),
                 id="crossover_point=0",
             ),
             pytest.param(
                 np.array([2]),
                 np.array([1, -3, 1.62913893, 0]),
-                np.array([[2.0, 2.0, -12.55642876, 0.0]]),
+                np.array([[2.0, 2.0, -0.62913893, 0.0]]),
                 id="crossover_point=4",
             ),
             pytest.param(
@@ -178,7 +178,7 @@ class TestContinuousGenAlgSolver:
                 4,
                 3,
                 17.0614,
-                np.array([-5.280, -3.915, -5.394]),
+                np.array([4.632, -4.175, -6.025]),
                 id="continuous_fitness_function=4",
             ),
             pytest.param(
@@ -188,7 +188,7 @@ class TestContinuousGenAlgSolver:
                 6,
                 2,
                 18.2684,
-                np.array([10.420, -5.753]),
+                np.array([[9.014, 9.398]]),
                 id="continuous_fitness_function=6",
             ),
         ],

@@ -70,6 +70,8 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         self.variables_limits = variables_limits
         self.problem_type = problem_type
 
+        self.beta = 0.5
+
     def initialize_population(self):
         """
         Initializes the population of the problem according to the
@@ -132,11 +134,7 @@ class ContinuousGenAlgSolver(GenAlgSolver):
 
         crossover_pt = crossover_pt[0]
 
-        beta = (
-            np.random.rand(1)[0]
-            if offspring_number == "first"
-            else -np.random.rand(1)[0]
-        )
+        beta = np.random.rand(1)[0] if offspring_number == "first" else self.beta
 
         if self.problem_type == float:
             p_new = first_parent[crossover_pt] - beta * (
@@ -151,6 +149,8 @@ class ContinuousGenAlgSolver(GenAlgSolver):
 
             if not variable_limits[0] <= p_new <= variable_limits[1]:
                 p_new = np.random.randint(variable_limits[0], variable_limits[1] + 1)
+
+        self.beta = beta
 
         return np.hstack(
             (first_parent[:crossover_pt], p_new, sec_parent[crossover_pt + 1 :])
