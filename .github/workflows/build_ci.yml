@@ -18,10 +18,10 @@ jobs:
         with:
           python-version: 3.8
       - name: Install and configure Poetry
-        uses: snok/install-poetry@v1.1.2
+        uses: snok/install-poetry@v1.3.3
         with:
-          version: 1.1.5
-          virtualenvs-create: false
+          version: 1.7.1
+          virtualenvs-create: true
       - name: Install dependencies
         run: |
           poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi
