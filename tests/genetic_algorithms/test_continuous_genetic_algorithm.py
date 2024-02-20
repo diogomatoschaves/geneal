@@ -159,6 +159,19 @@ class TestContinuousGenAlgSolver:
         assert np.allclose(mutated_population, expected_mutated_population, rtol=1e-5)
 
     @pytest.mark.parametrize(
+        'fitness_tolerance',
+        [
+            pytest.param(
+                None,
+                id='no_tolerance'
+            ),
+            pytest.param(
+                (10, 2),
+                id='with_tolerance'
+            ),
+        ]
+    )
+    @pytest.mark.parametrize(
         "fitness_function, n_genes, expected_best_fitness, expected_best_individual",
         [
             pytest.param(
@@ -195,13 +208,13 @@ class TestContinuousGenAlgSolver:
     )
     def test_solve(
         self,
-        mocker,
         mock_matplotlib,
         mock_logging,
         fitness_function,
         n_genes,
         expected_best_fitness,
         expected_best_individual,
+        fitness_tolerance
     ):
 
         solver = ContinuousGenAlgSolver(
@@ -212,6 +225,7 @@ class TestContinuousGenAlgSolver:
             mutation_rate=0.05,
             selection_rate=0.5,
             random_state=42,
+            fitness_tolerance=fitness_tolerance
         )
 
         solver.solve()

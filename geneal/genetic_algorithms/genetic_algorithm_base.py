@@ -31,6 +31,7 @@ class GenAlgSolver:
         plot_results: bool = True,
         excluded_genes: Sequence = None,
         n_crossover_points: int = 1,
+        fitness_tolerance=None,
         random_state: int = None,
     ):
         """
@@ -47,7 +48,12 @@ class GenAlgSolver:
         :param show_stats: whether to print stats at the end
         :param plot_results: whether to plot results of the run at the end
         :param n_crossover_points: number of slices to make for the crossover
+        :param fitness_tolerance: optional. (a, b) tuple consisting of the tolerance on the
+            change in the best fitness, and the number of generations the condition
+            holds true. If the best fitness does not change by a value of (a) for a specified
+            number of iterations (b), the solver stops and exits the loop.
         :param random_state: optional. whether the random seed should be set
+
         """
 
         if isinstance(random_state, int):
@@ -72,6 +78,8 @@ class GenAlgSolver:
         self.verbose = verbose
         self.show_stats = show_stats
         self.plot_results = plot_results
+        self.fitness_tolerance = fitness_tolerance
+        self.periods_same_fitness = 0
 
         self.pop_keep = math.floor(selection_rate * pop_size)
 
@@ -150,6 +158,8 @@ class GenAlgSolver:
         gen_n = 0
         while True:
 
+            best_fitness = fitness[0]
+
             gen_n += 1
 
             if self.verbose and gen_n % gen_interval == 0:
@@ -185,7 +195,7 @@ class GenAlgSolver:
 
             fitness, population = self.sort_by_fitness(fitness, population)
 
-            if gen_n >= self.max_gen:
+            if gen_n >= self.max_gen or self._check_condition_to_stop(best_fitness, fitness):
                 break
 
         self.generations_ = gen_n
@@ -457,3 +467,15 @@ class GenAlgSolver:
         )
 
         return mutation_rows, mutation_cols
+
+    def _check_condition_to_stop(self, best_fitness, fitness):
+
+        if self.fitness_tolerance is None:
+            return False
+
+        if np.abs(best_fitness - fitness[0]) < self.fitness_tolerance[0]:
+            self.periods_same_fitness += 1
+        else:
+            self.periods_same_fitness = 0
+
+        return self.periods_same_fitness >= self.fitness_tolerance[1]

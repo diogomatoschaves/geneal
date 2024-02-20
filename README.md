@@ -58,6 +58,8 @@ solver = BinaryGenAlgSolver(
     mutation_rate=0.05, # mutation rate to apply to the population
     selection_rate=0.5, # percentage of the population to select for mating
     selection_strategy="roulette_wheel", # strategy to use for selection. see below for more details
+    fitness_tolerance=(1E-4, 50)  # Loop will be exited if the best fitness value does not change more than
+                                  # 1E-4 for 50 generations
 )
 
 solver.solve()
@@ -98,6 +100,8 @@ solver = ContinuousGenAlgSolver(
     mutation_rate=0.1, # mutation rate to apply to the population
     selection_rate=0.6, # percentage of the population to select for mating
     selection_strategy="roulette_wheel", # strategy to use for selection. see below for more details
+    fitness_tolerance=(1E-5, 20)  # Loop will be exited if the best fitness value does not change more than
+                                  # 1E-5 for 20 generations
 )
 
 solver.solve()
