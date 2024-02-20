@@ -23,6 +23,7 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         variables_limits=(-10, 10),
         problem_type=float,
         n_crossover_points: int = 1,
+        fitness_tolerance=None,
         random_state: int = None,
     ):
         """
@@ -39,8 +40,13 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         :param show_stats: whether to print stats at the end
         :param plot_results: whether to plot results of the run at the end
         :param variables_limits: limits for each variable [(x1_min, x1_max), (x2_min, x2_max), ...].
-        If only one tuple is provided, then it is assumed the same for every variable
+            If only one tuple is provided, then it is assumed the same for every variable
         :param problem_type: whether problem is of float or integer type
+        :param fitness_tolerance: optional. (a, b) tuple consisting of the tolerance on the
+            change in the best fitness, and the number of generations the condition
+            holds true. If the best fitness does not change by a value of (a) for a specified
+            number of iterations (b), the solver stops and exits the loop.
+        :param random_state: optional. whether the random seed should be set
         """
 
         GenAlgSolver.__init__(
@@ -58,6 +64,7 @@ class ContinuousGenAlgSolver(GenAlgSolver):
             excluded_genes=excluded_genes,
             n_crossover_points=n_crossover_points,
             random_state=random_state,
+            fitness_tolerance=fitness_tolerance
         )
 
         if not variables_limits:

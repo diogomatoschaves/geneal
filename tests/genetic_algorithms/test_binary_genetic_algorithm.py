@@ -88,124 +88,55 @@ class TestBinaryGenAlgSolver:
         assert np.equal(mutated_population, expected_mutated_population).all()
 
     @pytest.mark.parametrize(
+        'fitness_tolerance',
+        [
+            pytest.param(
+                None,
+                id='no_tolerance'
+            ),
+            pytest.param(
+                (10, 2),
+                id='with_tolerance'
+            ),
+        ]
+    )
+    @pytest.mark.parametrize(
         "fitness_function, n_genes, expected_best_fitness, expected_best_individual",
         [
             pytest.param(
                 1,
                 50,
-                47.0,
-                np.array(
-                    [
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        0.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        0.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        0.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                    ]
-                ),
+                [47.0, 38.0],
+                [
+                    np.array([
+                        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0,
+                        1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0,
+                        1.0, 1.0
+                    ]),
+                    np.array([
+                         0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1,
+                         0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 1, 0, 1, 1, 0,
+                         1, 1,
+                    ])
+                ],
                 id="binary_fitness_function=1",
             ),
             pytest.param(
                 2,
                 48,
-                -4.0,
-                np.array(
-                    [
-                        1.0,
-                        0.0,
-                        1.0,
-                        1.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0,
-                        1.0,
-                        0.0,
-                        0.0,
-                        1.0,
-                        1.0,
-                        0.0,
-                        1.0,
-                        1.0,
-                        0.0,
-                        1.0,
-                        0.0,
-                        0.0,
-                        1.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0,
-                        0.0,
-                        0.0,
-                        1.0,
-                        0.0,
-                        0.0,
-                        1.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                        1.0,
-                        0.0,
-                        1.0,
-                        0.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        1.0,
-                        0.0,
-                        0.0,
-                        0.0,
-                    ]
-                ),
+                [-4.0, -18],
+                [
+                    np.array([
+                        1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0,
+                        0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0, 0.0,
+                        0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0
+                    ]),
+                    np.array([
+                        1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 0, 1,
+                        1, 0, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0,
+                    ])
+                ],
                 id="binary_fitness_function=2",
             ),
         ],
@@ -218,6 +149,7 @@ class TestBinaryGenAlgSolver:
         n_genes,
         expected_best_fitness,
         expected_best_individual,
+        fitness_tolerance
     ):
 
         solver = BinaryGenAlgSolver(
@@ -228,11 +160,20 @@ class TestBinaryGenAlgSolver:
             mutation_rate=0.05,
             selection_rate=0.5,
             random_state=42,
+            fitness_tolerance=fitness_tolerance
         )
 
         solver.solve()
 
         print(solver.best_individual_)
+
+        expected_best_fitness = expected_best_fitness[0] \
+            if fitness_tolerance is None \
+            else expected_best_fitness[1]
+
+        expected_best_individual = expected_best_individual[0] \
+            if fitness_tolerance is None \
+            else expected_best_individual[1]
 
         assert solver.best_fitness_ == expected_best_fitness
         assert np.equal(solver.best_individual_, expected_best_individual).all()
