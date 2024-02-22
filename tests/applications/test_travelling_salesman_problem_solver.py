@@ -17,7 +17,7 @@ from tests.applications.fixtures.tsp_test_fixture import G
 
 class TestTravellingSalesmanProblemSolver:
     @pytest.mark.parametrize(
-        "problem_type, expected_result",
+        "variables_type, expected_result",
         [
             pytest.param(
                 int,
@@ -34,7 +34,7 @@ class TestTravellingSalesmanProblemSolver:
             ),
         ],
     )
-    def test_initialize_population(self, problem_type, expected_result):
+    def test_initialize_population(self, variables_type, expected_result):
 
         pop_size = 5
         n_genes = len(G.nodes)

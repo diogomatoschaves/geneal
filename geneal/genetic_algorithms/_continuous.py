@@ -3,6 +3,7 @@ from typing import Sequence
 import numpy as np
 
 from geneal.genetic_algorithms.genetic_algorithm_base import GenAlgSolver
+from geneal.utils.exceptions import InvalidInput
 from geneal.utils.helpers import get_input_dimensions
 
 
@@ -21,15 +22,15 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         plot_results: bool = True,
         excluded_genes: Sequence = None,
         variables_limits=(-10, 10),
-        problem_type=float,
+        variables_type=float,
         n_crossover_points: int = 1,
         fitness_tolerance=None,
         random_state: int = None,
     ):
         """
         :param fitness_function: can either be a fitness function or
-        a class implementing a fitness function + methods to override
-        the default ones: create_offspring, mutate_population, initialize_population
+            a class implementing a fitness function + methods to override
+            the default ones: create_offspring, mutate_population, initialize_population
         :param n_genes: number of genes (variables) to have in each chromosome
         :param max_gen: maximum number of generations to perform the optimization
         :param pop_size: population size
@@ -41,7 +42,8 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         :param plot_results: whether to plot results of the run at the end
         :param variables_limits: limits for each variable [(x1_min, x1_max), (x2_min, x2_max), ...].
             If only one tuple is provided, then it is assumed the same for every variable
-        :param problem_type: whether problem is of float or integer type
+        :param variables_type: the type of each variable. Can be supplied for all variables or as tuple
+            for each individual variable.
         :param fitness_tolerance: optional. (a, b) tuple consisting of the tolerance on the
             change in the best fitness, and the number of generations the condition
             holds true. If the best fitness does not change by a value of (a) for a specified
@@ -75,7 +77,17 @@ class ContinuousGenAlgSolver(GenAlgSolver):
             variables_limits = [variables_limits for _ in range(n_genes)]
 
         self.variables_limits = variables_limits
-        self.problem_type = problem_type
+
+        if not variables_type:
+            self.variables_type = [float] * n_genes
+        elif variables_type in [float, int]:
+            self.variables_type = [variables_type] * n_genes
+        elif isinstance(variables_type, (tuple, list, np.ndarray)):
+            if len(variables_type) != n_genes:
+                raise InvalidInput("`variables_type` must have the same dimension as `n_genes`")
+            self.variables_type = variables_type
+        else:
+            raise InvalidInput("`variables_type` must be either `float`, `int`, or a tuple of those for each gene")
 
         self.beta = 0.5
 
@@ -91,7 +103,7 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         population = np.empty(shape=(self.pop_size, self.n_genes))
 
         for i, variable_limits in enumerate(self.variables_limits):
-            if self.problem_type == float:
+            if self.variables_type[i] == float:
                 population[:, i] = np.random.uniform(
                     variable_limits[0], variable_limits[1], size=self.pop_size
                 )
@@ -141,15 +153,18 @@ class ContinuousGenAlgSolver(GenAlgSolver):
 
         crossover_pt = crossover_pt[0]
 
+        variable_limits = self.variables_limits[crossover_pt]
+
         beta = np.random.rand(1)[0] if offspring_number == "first" else self.beta
 
-        if self.problem_type == float:
+        if self.variables_type[crossover_pt] == float:
             p_new = first_parent[crossover_pt] - beta * (
                 first_parent[crossover_pt] - sec_parent[crossover_pt]
             )
-        else:
-            variable_limits = self.variables_limits[crossover_pt]
 
+            if not variable_limits[0] <= p_new <= variable_limits[1]:
+                p_new = np.random.uniform(variable_limits[0], variable_limits[1] + 1)
+        else:
             p_new = first_parent[crossover_pt] - np.round(
                 beta * (first_parent[crossover_pt] - sec_parent[crossover_pt])
             )
