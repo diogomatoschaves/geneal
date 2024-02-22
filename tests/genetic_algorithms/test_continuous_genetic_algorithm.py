@@ -6,12 +6,80 @@ from geneal.applications.fitness_functions.continuous import (
     fitness_functions_continuous,
 )
 from geneal.genetic_algorithms import ContinuousGenAlgSolver
+from geneal.utils.exceptions import InvalidInput
 from tests.mock_fixtures.mock_fixtures import mock_matplotlib, mock_logging
 
 
 class TestContinuousGenAlgSolver:
+
     @pytest.mark.parametrize(
-        "problem_type, expected_result",
+        "variables_type",
+        [
+            pytest.param(
+                (int, int, int),
+                id="variables_type-wrong_dimensions",
+            ),
+            pytest.param(
+                "variables_type",
+                id="variables_type-invalid",
+            )
+        ],
+    )
+    def test_invalid_input(self, variables_type):
+        with pytest.raises(Exception) as excinfo:
+            continuous_solver = ContinuousGenAlgSolver(
+                fitness_function=lambda x: x.sum(),
+                n_genes=4,
+                pop_size=5,
+                variables_type=variables_type,
+                random_state=42,
+            )
+
+        assert excinfo.type == InvalidInput
+
+    @pytest.mark.parametrize(
+        "variables_type,variable_limits",
+        [
+            pytest.param(
+                None,
+                [-10, 10],
+                id="variables_type-None",
+            ),
+            pytest.param(
+                [float, float, float],
+                [-10, 10],
+                id="variables_type-correct_tuple",
+            ),
+            pytest.param(
+                None,
+                None,
+                id="variable_limits-None",
+            ),
+        ],
+    )
+    def test_valid_input(self, variables_type, variable_limits):
+
+        n_genes = 3
+
+        continuous_solver = ContinuousGenAlgSolver(
+            fitness_function=lambda x: x.sum(),
+            n_genes=n_genes,
+            pop_size=5,
+            variables_type=variables_type,
+            variables_limits=variable_limits,
+            random_state=42,
+        )
+
+        assert continuous_solver.variables_type == [float] * n_genes
+
+        if variable_limits is not None:
+            assert continuous_solver.variables_limits == [variable_limits] * n_genes
+        else:
+            min_max = np.iinfo(np.int64)
+            assert continuous_solver.variables_limits == [(min_max.min, min_max.max)] * n_genes
+
+    @pytest.mark.parametrize(
+        "variables_type, expected_result",
         [
             pytest.param(
                 int,
@@ -24,7 +92,7 @@ class TestContinuousGenAlgSolver:
                         [-3.0, 0.0, 10.0, 10.0],
                     ]
                 ),
-                id="problem_type=int",
+                id="variables_type=int",
             ),
             pytest.param(
                 float,
@@ -37,17 +105,17 @@ class TestContinuousGenAlgSolver:
                         [-6.87962719, 4.16145156, -6.36350066, -4.1754172],
                     ]
                 ),
-                id="problem_type=float",
+                id="variables_type=float",
             ),
         ],
     )
-    def test_initialize_population(self, problem_type, expected_result):
+    def test_initialize_population(self, variables_type, expected_result):
 
         continuous_solver = ContinuousGenAlgSolver(
             fitness_function=lambda x: x.sum(),
             n_genes=4,
             pop_size=5,
-            problem_type=problem_type,
+            variables_type=variables_type,
             random_state=42,
         )
 
@@ -56,29 +124,28 @@ class TestContinuousGenAlgSolver:
         assert np.allclose(population, expected_result, rtol=1e-05)
 
     @pytest.mark.parametrize(
-        "variables_limits, problem_type",
+        "variables_limits, variables_type",
         [
             pytest.param(
                 (-20, 20),
                 int,
-                id="problem_type=int | variables_limits=same for all genes",
+                id="variables_type=int | variables_limits=same for all genes",
             ),
             pytest.param(
                 [(0, 10), (-10, 5), (-100, 100), (5, 20)],
                 float,
-                id="problem_type=float | variables_limits=different for all genes",
+                id="variables_type=float | variables_limits=different for all genes",
             ),
         ],
     )
     def test_initialize_population_variable_limits(
-        self, variables_limits, problem_type
+        self, variables_limits, variables_type
     ):
-
         continuous_solver = ContinuousGenAlgSolver(
             fitness_function=lambda x: x.sum(),
             n_genes=4,
             pop_size=5,
-            problem_type=problem_type,
+            variables_type=variables_type,
             variables_limits=variables_limits,
             random_state=42,
         )
@@ -90,34 +157,51 @@ class TestContinuousGenAlgSolver:
             assert population[:, i].max() < continuous_solver.variables_limits[i][1]
 
     @pytest.mark.parametrize(
-        "crossover_pt, expected_first_offspring, expected_second_offspring",
+        "variables_type,crossover_pt,expected_first_offspring,expected_second_offspring",
         [
             pytest.param(
+                float,
                 np.array([0]),
                 np.array([1.37454012, 2, -4, 0]),
                 np.array([1.62545988, -3.0, 5.0, 0.0]),
-                id="crossover_point=0",
+                id="float-crossover_point=0",
             ),
             pytest.param(
+                float,
                 np.array([2]),
                 np.array([1, -3, 1.62913893, 0]),
                 np.array([[2.0, 2.0, -0.62913893, 0.0]]),
-                id="crossover_point=4",
+                id="float-crossover_point=4",
             ),
             pytest.param(
+                float,
                 np.array([3]),
                 np.array([1.0, -3.0, 5.0, 0.0]),
                 np.array([2.0, 2.0, -4.0, 0.0]),
-                id="crossover_point=9",
+                id="float-crossover_point=9",
+            ),
+            pytest.param(
+                int,
+                np.array([0]),
+                [1,  2, - 4,  0],
+                [2, -3,  5,  0],
+                id="int-crossover_point=0",
+            ),
+            pytest.param(
+                int,
+                np.array([2]),
+                [1, - 3,  2,  0],
+                [2,  2, - 1,  0],
+                id="int-crossover_point=4",
             ),
         ],
     )
-    def test_create_offspring(
-        self, crossover_pt, expected_first_offspring, expected_second_offspring
+    def test_create_offspring_float(
+        self, variables_type, crossover_pt, expected_first_offspring, expected_second_offspring
     ):
 
         continuous_solver = ContinuousGenAlgSolver(
-            fitness_function=lambda x: x.sum(), n_genes=4, pop_size=5, random_state=42
+            fitness_function=lambda x: x.sum(), n_genes=4, pop_size=5, random_state=42, variables_type=variables_type
         )
 
         first_parent = np.array([1, -3, 5, 0])
@@ -130,6 +214,9 @@ class TestContinuousGenAlgSolver:
         second_offspring = continuous_solver.create_offspring(
             sec_parent, first_parent, crossover_pt, "second"
         )
+
+        print(first_offspring)
+        print(second_offspring)
 
         assert np.allclose(first_offspring, expected_first_offspring, rtol=1e-5)
         assert np.allclose(second_offspring, expected_second_offspring, rtol=1e-5)
