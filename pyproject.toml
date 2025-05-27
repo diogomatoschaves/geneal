@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "geneal"
-version = "0.5.1"
+version = "0.8.2"
 description = "Python Genetic Algorithm library"
 license = "MIT License"
 authors = ["Diogo Matos Chaves <diogo_chaves@hotmail.com>"]
