@@ -14,6 +14,16 @@ as well as specific use case applications such as a solver for the
 $ pip install geneal
 ```
 
+The core solvers only depend on `numpy`. Optional features are installed via extras:
+
+```
+$ pip install "geneal[plot]"   # matplotlib, for the fitness plot shown by solve() (plot_results=True)
+$ pip install "geneal[tsp]"    # numba, networkx, pandas and plotly, for the Travelling Salesman Problem application
+$ pip install "geneal[all]"    # everything above
+```
+
+If `matplotlib` isn't installed, `solve()` logs a warning and skips the plot.
+
 ## Usage
 
 `geneal` provides 2 main GA solver classes, `BinaryGenAlgSolver` and `ContinuousGenAlgSolver` 

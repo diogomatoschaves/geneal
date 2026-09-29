@@ -5,7 +5,6 @@ from abc import ABCMeta, abstractmethod
 from typing import Sequence
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from geneal.utils.exceptions import NoFitnessFunction, InvalidInput
 from geneal.utils.exceptions_messages import exception_messages
@@ -361,7 +360,7 @@ class GenAlgSolver:
         :return: the sorted fitness array and sorted population array
         """
 
-        sorted_fitness = np.argsort(fitness)[::-1]
+        sorted_fitness = np.argsort(fitness, kind="stable")[::-1]
 
         population = population[sorted_fitness, :]
         fitness = fitness[sorted_fitness]
@@ -390,6 +389,15 @@ class GenAlgSolver:
         :param iterations: total number of generations
         :return: None
         """
+
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            logging.warning(
+                "matplotlib is not installed, so the fitness plot was skipped. "
+                "Install it with `pip install geneal[plot]` or pass plot_results=False."
+            )
+            return
 
         plt.figure(figsize=(7, 7))
 

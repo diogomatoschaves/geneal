@@ -352,7 +352,7 @@ class MutationStrategies:
         return np.apply_along_axis(
             lambda gene_index: np.take(
                 np.arange(route.shape[0]),
-                np.arange(gene_index, gene_index + slice_size),
+                np.arange(gene_index[0], gene_index[0] + slice_size),
                 mode="wrap",
             ),
             1,
