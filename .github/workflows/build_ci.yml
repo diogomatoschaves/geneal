@@ -10,21 +10,25 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v1
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
         with:
-          python-version: 3.12
+          python-version: ${{ matrix.python-version }}
       - name: Install and configure Poetry
-        uses: snok/install-poetry@v1.3.3
+        uses: snok/install-poetry@v1
         with:
-          version: 1.7.1
+          version: 2.3.3
           virtualenvs-create: false
       - name: Install dependencies
         run: |
-          poetry config virtualenvs.create false && poetry install --no-interaction --no-ansi
+          poetry config virtualenvs.create false && poetry install --all-extras --no-interaction --no-ansi
       - name: Commit files and push
         env:
           CI_USER: ${{ secrets.USERNAME }}

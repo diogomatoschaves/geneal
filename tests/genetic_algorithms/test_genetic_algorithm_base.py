@@ -1,3 +1,6 @@
+import logging
+import sys
+
 import pytest
 
 import numpy as np
@@ -202,3 +205,31 @@ class TestGenAlgSolver:
 
         assert excinfo.type == InvalidInput
         assert str(excinfo.value) == expected_exception_message
+
+    def test_sort_by_fitness_is_stable_for_ties(self):
+
+        # Large enough for numpy's (unstable) SIMD argsort to kick in
+        fitness = (np.arange(20) % 3).astype(float)
+        population = np.arange(20).reshape(20, 1)
+
+        sorted_fitness, sorted_population = GenAlgSolver.sort_by_fitness(
+            fitness, population
+        )
+
+        expected_order = np.array(
+            [17, 14, 11, 8, 5, 2, 19, 16, 13, 10, 7, 4, 1, 18, 15, 12, 9, 6, 3, 0]
+        )
+
+        assert np.equal(sorted_population[:, 0], expected_order).all()
+        assert np.equal(sorted_fitness, fitness[expected_order]).all()
+
+    def test_plot_fitness_results_without_matplotlib(self, mocker, caplog):
+
+        mocker.patch.dict(sys.modules, {"matplotlib": None, "matplotlib.pyplot": None})
+
+        with caplog.at_level(logging.WARNING):
+            GenAlgSolver.plot_fitness_results(
+                np.array([1.0, 2.0]), np.array([2.0, 3.0]), 2
+            )
+
+        assert "geneal[plot]" in caplog.text

@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "geneal"
-version = "0.8.2"
+version = "0.9.0"
 description = "Python Genetic Algorithm library"
 license = "MIT License"
 authors = ["Diogo Matos Chaves <diogo_chaves@hotmail.com>"]
@@ -9,22 +9,25 @@ repository = "https://github.com/diogomatoschaves/geneal"
 keywords = ["genetic algorithms", "ga", "optimization", "genetic programming"]
 
 [tool.poetry.dependencies]
-python = ">=3.9,<3.13"
-numpy = "^1.26"
-matplotlib = "^3.8"
-numba = "^0.59"
-scipy = "^1.7.3"
-networkx = "2.6.3"
-pandas = "^2.1"
-descartes = "1.1.0"
-ipykernel = "6.16.0"
-plotly = "^5.10.0"
-nbformat = "5.6.1"
+python = ">=3.9"
+numpy = ">=1.21"
+# Optional: fitness plot at the end of solve() (`plot_results=True`)
+matplotlib = { version = ">=3.5", optional = true }
+# Optional: Travelling Salesman Problem application (geneal.applications.tsp)
+numba = { version = ">=0.56", optional = true }
+networkx = { version = ">=2.6", optional = true }
+pandas = { version = ">=1.3", optional = true }
+plotly = { version = ">=5.10", optional = true }
 
-[tool.poetry.dev-dependencies]
-pytest = "^7.1.3"
-pytest-cov = "^3.0.0"
-pytest-mock = "^3.8.2"
+[tool.poetry.extras]
+plot = ["matplotlib"]
+tsp = ["numba", "networkx", "pandas", "plotly"]
+all = ["matplotlib", "numba", "networkx", "pandas", "plotly"]
+
+[tool.poetry.group.dev.dependencies]
+pytest = ">=7.1.3"
+pytest-cov = ">=3.0.0"
+pytest-mock = ">=3.8.2"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
