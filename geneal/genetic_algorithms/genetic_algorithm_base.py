@@ -1,5 +1,4 @@
 import datetime
-import logging
 import math
 from abc import ABCMeta, abstractmethod
 from typing import Sequence
@@ -8,8 +7,8 @@ import numpy as np
 
 from geneal.utils.exceptions import NoFitnessFunction, InvalidInput
 from geneal.utils.exceptions_messages import exception_messages
-from geneal.utils.helpers import get_elapsed_time
-from geneal.utils.logger import configure_logger
+from geneal.utils.helpers import check_random_state, get_elapsed_time
+from geneal.utils.logger import configure_logger, logger
 
 
 allowed_selection_strategies = {"roulette_wheel", "two_by_two", "random", "tournament"}
@@ -31,12 +30,13 @@ class GenAlgSolver:
         excluded_genes: Sequence = None,
         n_crossover_points: int = 1,
         fitness_tolerance=None,
-        random_state: int = None,
+        random_state=None,
+        initial_population=None,
     ):
         """
-        :param fitness_function: can either be a fitness function or
-        a class implementing a fitness function + methods to override
-        the default ones: create_offspring, mutate_population, initialize_population
+        :param fitness_function: optional. Function that takes one individual and returns
+        its fitness. It can also be defined as a method on a child class, or skipped when
+        calculate_fitness is overridden or the solver is driven with ask() / tell()
         :param n_genes: number of genes (variables) to have in each chromosome
         :param max_gen: maximum number of generations to perform the optimization
         :param pop_size: population size
@@ -51,12 +51,16 @@ class GenAlgSolver:
             change in the best fitness, and the number of generations the condition
             holds true. If the best fitness does not change by a value of (a) for a specified
             number of iterations (b), the solver stops and exits the loop.
-        :param random_state: optional. whether the random seed should be set
+        :param random_state: optional. An int seed or a np.random.RandomState. The solver
+            draws from its own generator, so numpy's global random state is left untouched.
+            If None, numpy's global random state is used.
+        :param initial_population: optional. Array of shape (k, n_genes), with k <= pop_size,
+            whose rows replace the first k individuals of the randomly initialized population.
 
         """
 
-        if isinstance(random_state, int):
-            np.random.seed(random_state)
+        self.random_state = random_state
+        self.rng = check_random_state(random_state)
 
         configure_logger()
 
@@ -90,24 +94,15 @@ class GenAlgSolver:
         self.n_matings = math.floor((self.pop_size - self.pop_keep) / 2)
         self.n_mutations = self.get_number_mutations()
 
-        self.generations_ = 0
-        self.best_individual_ = None
-        self.best_fitness_ = 0
-        self.population_ = None
-        self.fitness_ = None
+        self.initial_population = self.check_initial_population(initial_population)
+
+        self._reset()
 
     def check_input_base(
         self, fitness_function, selection_strategy, pop_size, excluded_genes
     ):
 
-        if not fitness_function:
-            try:
-                getattr(self, "fitness_function")
-            except AttributeError:
-                raise NoFitnessFunction(
-                    "A fitness function must be defined or provided as an argument"
-                )
-        else:
+        if fitness_function:
             self.fitness_function = fitness_function
 
         if selection_strategy not in allowed_selection_strategies:
@@ -132,6 +127,191 @@ class GenAlgSolver:
                 exception_messages["InvalidExcludedGenes"](excluded_genes)
             )
 
+    def check_initial_population(self, initial_population):
+
+        if initial_population is None:
+            return None
+
+        initial_population = np.asarray(initial_population)
+
+        if initial_population.ndim == 1:
+            initial_population = initial_population[np.newaxis, :]
+
+        if (
+            initial_population.ndim != 2
+            or initial_population.shape[1] != self.n_genes
+            or not 1 <= initial_population.shape[0] <= self.pop_size
+        ):
+            raise InvalidInput(
+                exception_messages["InvalidInitialPopulation"](
+                    initial_population.shape, self.pop_size, self.n_genes
+                )
+            )
+
+        return initial_population
+
+    def _reset(self):
+
+        self.generations_ = 0
+        self.best_individual_ = None
+        self.best_fitness_ = 0
+        self.population_ = None
+        self.fitness_ = None
+        self.mean_fitness_ = np.array([])
+        self.max_fitness_ = np.array([])
+        self.periods_same_fitness = 0
+
+        self._pending = None
+        self._pending_start = 0
+        self._tolerance_reached = False
+
+    @property
+    def done(self):
+        """
+        Whether the optimization has finished, either because max_gen generations
+        were run or because the fitness_tolerance condition was met.
+        """
+        return self.population_ is not None and (
+            self.generations_ >= self.max_gen or self._tolerance_reached
+        )
+
+    def ask(self):
+        """
+        Returns the individuals whose fitness is needed to advance the optimization,
+        as a 2-D array with one individual per row. Evaluate them (in batch, if you
+        like) and pass the fitness values, in the same order, to tell().
+
+        The first call returns the whole initial population. Later calls return every
+        individual except the fittest one, whose fitness is carried over from the
+        previous generation. Calling ask() again before tell() returns the same
+        individuals.
+
+        Stepping many solvers in lockstep lets one batched evaluation serve all of them:
+
+            while not all(solver.done for solver in solvers):
+                active = [solver for solver in solvers if not solver.done]
+                candidates = [solver.ask() for solver in active]
+                fitness = evaluate(np.vstack(candidates))
+                splits = np.cumsum([len(c) for c in candidates])[:-1]
+                for solver, solver_fitness in zip(active, np.split(fitness, splits)):
+                    solver.tell(solver_fitness)
+
+        :return: a numpy array with the individuals to evaluate
+        """
+
+        if self._pending is None:
+
+            if self.done:
+                raise RuntimeError(
+                    "The optimization has finished. Create a new solver or call solve() to start over."
+                )
+
+            if self.population_ is None:
+                population = self.initialize_population()
+
+                if self.initial_population is not None:
+                    population[: self.initial_population.shape[0]] = self.initial_population
+
+                self._pending, self._pending_start = population, 0
+
+            else:
+                self._pending, self._pending_start = self.create_next_generation(), 1
+
+        return self._pending[self._pending_start :]
+
+    def tell(self, fitness):
+        """
+        Passes the fitness of the individuals returned by the last call to ask(),
+        and advances the optimization by one generation (the first call only
+        evaluates the initial population).
+
+        After each call, population_ and fitness_ hold the current population sorted
+        by descending fitness, and best_individual_ / best_fitness_ its fittest
+        individual. Check `done` to know when to stop.
+
+        :param fitness: array with one fitness value per individual returned by ask()
+        :return: None
+        """
+
+        if self._pending is None:
+            raise RuntimeError("ask() must be called before tell().")
+
+        fitness = np.asarray(fitness).reshape(-1)
+
+        n_expected = self._pending.shape[0] - self._pending_start
+
+        if fitness.shape[0] != n_expected:
+            raise InvalidInput(
+                f"tell() expected {n_expected} fitness values, one per individual "
+                f"returned by ask(), but got {fitness.shape[0]}."
+            )
+
+        population, is_initial = self._pending, self._pending_start == 0
+        self._pending = None
+
+        if not is_initial:
+            best_fitness = self.fitness_[0]
+            fitness = np.hstack((self.fitness_[0], fitness))
+
+        fitness, population = self.sort_by_fitness(fitness, population)
+
+        if not is_initial:
+            self.generations_ += 1
+
+            if self.generations_ < self.max_gen:
+                self._tolerance_reached = self._check_condition_to_stop(
+                    best_fitness, fitness
+                )
+
+        self.population_ = population
+        self.fitness_ = fitness
+        self.best_individual_ = population[0, :]
+        self.best_fitness_ = fitness[0]
+
+    def create_next_generation(self):
+        """
+        Creates the next generation from the current (sorted) population: selects
+        parents, replaces the least fit individuals by their offspring and applies
+        mutations. The fittest individual is kept unchanged.
+
+        :return: a numpy array with the new population
+        """
+
+        fitness = self.fitness_
+        population = self.population_.copy()
+
+        gen_n = self.generations_ + 1
+        gen_interval = max(round(self.max_gen / 10), 1)
+
+        if self.verbose and gen_n % gen_interval == 0:
+            logger.info(f"Iteration: {gen_n}")
+            logger.info(f"Best fitness: {fitness[0]}")
+
+        self.mean_fitness_ = np.append(self.mean_fitness_, fitness.mean())
+        self.max_fitness_ = np.append(self.max_fitness_, fitness[0])
+
+        ma, pa = self.select_parents(fitness)
+
+        ix = np.arange(0, self.pop_size - self.pop_keep - 1, 2)
+
+        xp = np.array(
+            list(map(lambda _: self.get_crossover_points(), range(self.n_matings)))
+        )
+
+        for i in range(xp.shape[0]):
+
+            # create first offspring
+            population[-1 - ix[i], :] = self.create_offspring(
+                population[ma[i], :], population[pa[i], :], xp[i], "first"
+            )
+
+            # create second offspring
+            population[-1 - ix[i] - 1, :] = self.create_offspring(
+                population[pa[i], :], population[ma[i], :], xp[i], "second"
+            )
+
+        return self.mutate_population(population, self.n_mutations)
+
     def solve(self):
         """
         Performs the genetic algorithm optimization according to the parameters
@@ -142,69 +322,16 @@ class GenAlgSolver:
 
         start_time = datetime.datetime.now()
 
-        mean_fitness = np.ndarray(shape=(1, 0))
-        max_fitness = np.ndarray(shape=(1, 0))
+        self._reset()
 
-        # initialize the population
-        population = self.initialize_population()
-
-        fitness = self.calculate_fitness(population)
-
-        fitness, population = self.sort_by_fitness(fitness, population)
-
-        gen_interval = max(round(self.max_gen / 10), 1)
-
-        gen_n = 0
-        while True:
-
-            best_fitness = fitness[0]
-
-            gen_n += 1
-
-            if self.verbose and gen_n % gen_interval == 0:
-                logging.info(f"Iteration: {gen_n}")
-                logging.info(f"Best fitness: {fitness[0]}")
-
-            mean_fitness = np.append(mean_fitness, fitness.mean())
-            max_fitness = np.append(max_fitness, fitness[0])
-
-            ma, pa = self.select_parents(fitness)
-
-            ix = np.arange(0, self.pop_size - self.pop_keep - 1, 2)
-
-            xp = np.array(
-                list(map(lambda _: self.get_crossover_points(), range(self.n_matings)))
-            )
-
-            for i in range(xp.shape[0]):
-
-                # create first offspring
-                population[-1 - ix[i], :] = self.create_offspring(
-                    population[ma[i], :], population[pa[i], :], xp[i], "first"
-                )
-
-                # create second offspring
-                population[-1 - ix[i] - 1, :] = self.create_offspring(
-                    population[pa[i], :], population[ma[i], :], xp[i], "second"
-                )
-
-            population = self.mutate_population(population, self.n_mutations)
-
-            fitness = np.hstack((fitness[0], self.calculate_fitness(population[1:, :])))
-
-            fitness, population = self.sort_by_fitness(fitness, population)
-
-            if gen_n >= self.max_gen or self._check_condition_to_stop(best_fitness, fitness):
-                break
-
-        self.generations_ = gen_n
-        self.best_individual_ = population[0, :]
-        self.best_fitness_ = fitness[0]
-        self.population_ = population
-        self.fitness_ = fitness
+        while not self.done:
+            population = self.ask()
+            self.tell(self.calculate_fitness(population))
 
         if self.plot_results:
-            self.plot_fitness_results(mean_fitness, max_fitness, gen_n)
+            self.plot_fitness_results(
+                self.mean_fitness_, self.max_fitness_, self.generations_
+            )
 
         if self.show_stats:
             end_time = datetime.datetime.now()
@@ -215,12 +342,19 @@ class GenAlgSolver:
 
     def calculate_fitness(self, population):
         """
-        Calculates the fitness of the population
+        Calculates the fitness of the population. Override it to evaluate the
+        whole population in one batched call.
 
         :param population: population state at a given iteration
         :return: the fitness of the current population
         """
-        return np.array(list(map(self.fitness_function, population)))
+
+        fitness_function = getattr(self, "fitness_function", None)
+
+        if fitness_function is None:
+            raise NoFitnessFunction(exception_messages["NoFitnessFunction"])
+
+        return np.array(list(map(fitness_function, population)))
 
     def select_parents(self, fitness):
         """
@@ -245,12 +379,8 @@ class GenAlgSolver:
 
         if self.selection_strategy == "roulette_wheel":
 
-            ma = np.apply_along_axis(
-                self.roulette_wheel_selection, 1, np.random.rand(self.n_matings, 1)
-            )
-            pa = np.apply_along_axis(
-                self.roulette_wheel_selection, 1, np.random.rand(self.n_matings, 1)
-            )
+            ma = self.roulette_wheel_selection(self.rng.rand(self.n_matings, 1))
+            pa = self.roulette_wheel_selection(self.rng.rand(self.n_matings, 1))
 
         elif self.selection_strategy == "two_by_two":
 
@@ -264,12 +394,8 @@ class GenAlgSolver:
 
         elif self.selection_strategy == "random":
 
-            ma = np.apply_along_axis(
-                self.random_selection, 1, np.random.rand(self.n_matings, 1)
-            )
-            pa = np.apply_along_axis(
-                self.random_selection, 1, np.random.rand(self.n_matings, 1)
-            )
+            ma = self.random_selection(self.rng.rand(self.n_matings, 1))
+            pa = self.random_selection(self.rng.rand(self.n_matings, 1))
 
         elif self.selection_strategy == "tournament":
 
@@ -284,19 +410,21 @@ class GenAlgSolver:
         """
         Performs roulette wheel selection
 
-        :param value: random value defining which individual is selected
-        :return: the selected individual
+        :param value: random value(s) defining which individual is selected,
+            either of shape (1,) or (n_selections, 1)
+        :return: the selected individual(s)
         """
-        return np.argmin(value > self.prob_intervals) - 1
+        return np.argmin(value > self.prob_intervals, axis=-1) - 1
 
     def random_selection(self, value):
         """
         Performs random selection
 
-        :param value: random value defining which individual is selected
-        :return: the selected individual
+        :param value: random value(s) defining which individual is selected,
+            either of shape (1,) or (n_selections, 1)
+        :return: the selected individual(s)
         """
-        return np.argmin(value > self.prob_intervals) - 1
+        return np.argmin(value > self.prob_intervals, axis=-1) - 1
 
     def tournament_selection(self, fitness, range_max):
         """
@@ -307,7 +435,7 @@ class GenAlgSolver:
         :return: the selected individuals
         """
 
-        selected_individuals = np.random.choice(range_max, size=(self.n_matings, 3))
+        selected_individuals = self.rng.choice(range_max, size=(self.n_matings, 3))
 
         return np.array(
             list(
@@ -373,11 +501,8 @@ class GenAlgSolver:
 
         :return: a numpy array with the crossover points
         """
-        return np.sort(
-            np.random.choice(
-                np.arange(self.n_genes + 1), self.n_crossover_points, replace=False
-            )
-        )
+        # Same draws as rng.choice(np.arange(...), replace=False), without its overhead
+        return np.sort(self.rng.permutation(self.n_genes + 1)[: self.n_crossover_points])
 
     @staticmethod
     def plot_fitness_results(mean_fitness, max_fitness, iterations):
@@ -393,7 +518,7 @@ class GenAlgSolver:
         try:
             import matplotlib.pyplot as plt
         except ImportError:
-            logging.warning(
+            logger.warning(
                 "matplotlib is not installed, so the fitness plot was skipped. "
                 "Install it with `pip install geneal[plot]` or pass plot_results=False."
             )
@@ -417,17 +542,17 @@ class GenAlgSolver:
         :return: None
         """
 
-        logging.info("\n#############################")
-        logging.info("#\t\t\tSTATS\t\t\t#")
-        logging.info("#############################\n\n")
-        logging.info(f"Total running time: {time_str}\n\n")
-        logging.info(f"Population size: {self.pop_size}")
-        logging.info(f"Number variables: {self.n_genes}")
-        logging.info(f"Selection rate: {self.selection_rate}")
-        logging.info(f"Mutation rate: {self.mutation_rate}")
-        logging.info(f"Number Generations: {self.generations_}\n")
-        logging.info(f"Best fitness: {self.best_fitness_}")
-        logging.info(f"Best individual: {self.best_individual_}")
+        logger.info("\n#############################")
+        logger.info("#\t\t\tSTATS\t\t\t#")
+        logger.info("#############################\n\n")
+        logger.info(f"Total running time: {time_str}\n\n")
+        logger.info(f"Population size: {self.pop_size}")
+        logger.info(f"Number variables: {self.n_genes}")
+        logger.info(f"Selection rate: {self.selection_rate}")
+        logger.info(f"Mutation rate: {self.mutation_rate}")
+        logger.info(f"Number Generations: {self.generations_}\n")
+        logger.info(f"Best fitness: {self.best_fitness_}")
+        logger.info(f"Best individual: {self.best_individual_}")
 
     @abstractmethod
     def initialize_population(self):
@@ -466,11 +591,11 @@ class GenAlgSolver:
         :return: an array with the mutation_rows and mutation_cols
         """
 
-        mutation_rows = np.random.choice(
+        mutation_rows = self.rng.choice(
             np.arange(1, self.pop_size), n_mutations, replace=True
         )
 
-        mutation_cols = np.random.choice(
+        mutation_cols = self.rng.choice(
             self.allowed_mutation_genes, n_mutations, replace=True
         )
 

@@ -1,3 +1,4 @@
+import numbers
 import random
 import time
 from functools import reduce
@@ -72,6 +73,12 @@ class TravellingSalesmanProblemSolver(MutationStrategies, ContinuousGenAlgSolver
     ):
 
         self.check_input(kwargs, graph)
+
+        # The TSP mutation strategies draw from numpy's global random state, so
+        # this solver seeds it and shares it with the base class.
+        random_state = kwargs.pop("random_state", None)
+        if isinstance(random_state, numbers.Integral):
+            np.random.seed(random_state)
 
         MutationStrategies.__init__(self, n_searches=n_searches)
         ContinuousGenAlgSolver.__init__(self, n_crossover_points=2, *args, **kwargs)

@@ -75,14 +75,13 @@ class TestGenAlgSolver:
 
     def test_no_fitness_function_error(self):
 
+        gen_alg = GenAlgSolver(n_genes=10, random_state=42)
+
         with pytest.raises(Exception) as excinfo:
-            GenAlgSolver(n_genes=10, random_state=42)
+            gen_alg.calculate_fitness(np.zeros((5, 10)))
 
         assert excinfo.type == NoFitnessFunction
-        assert (
-            str(excinfo.value)
-            == "A fitness function must be defined or provided as an argument"
-        )
+        assert str(excinfo.value) == exception_messages["NoFitnessFunction"]
 
     @pytest.mark.parametrize(
         "pop_size, selection_strategy, expected_ma, expected_pa",
@@ -149,8 +148,6 @@ class TestGenAlgSolver:
         self, pop_size, selection_strategy, expected_ma, expected_pa
     ):
 
-        np.random.seed(42)
-
         n_genes = 10
 
         gen_alg = GenAlgSolver(
@@ -161,7 +158,7 @@ class TestGenAlgSolver:
             random_state=42,
         )
 
-        fitness = np.random.rand(pop_size, 1)
+        fitness = gen_alg.rng.rand(pop_size, 1)
 
         ma, pa = gen_alg.select_parents(fitness)
 
