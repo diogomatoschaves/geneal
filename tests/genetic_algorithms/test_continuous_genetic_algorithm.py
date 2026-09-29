@@ -194,6 +194,20 @@ class TestContinuousGenAlgSolver:
                 [2,  2, - 1,  0],
                 id="int-crossover_point=4",
             ),
+            pytest.param(
+                "categorical",
+                np.array([0]),
+                [1, 2, -4, 0],
+                [2, -3, 5, 0],
+                id="categorical-crossover_point=0",
+            ),
+            pytest.param(
+                "categorical",
+                np.array([2]),
+                [1, -3, 5, 0],
+                [2, 2, -4, 0],
+                id="categorical-crossover_point=2",
+            ),
         ],
     )
     def test_create_offspring_float(
@@ -220,6 +234,69 @@ class TestContinuousGenAlgSolver:
 
         assert np.allclose(first_offspring, expected_first_offspring, rtol=1e-5)
         assert np.allclose(second_offspring, expected_second_offspring, rtol=1e-5)
+
+    def test_categorical_crossover_copies_parent_genes(self):
+
+        continuous_solver = ContinuousGenAlgSolver(
+            n_genes=3, variables_type="categorical", variables_limits=(0, 9), random_state=0
+        )
+
+        first_parent = np.array([2, 5, 7])
+        sec_parent = np.array([5, 2, 1])
+
+        for _ in range(50):
+            crossover_pt = np.array([continuous_solver.rng.randint(3)])
+            k = crossover_pt[0]
+
+            first_offspring = continuous_solver.create_offspring(
+                first_parent, sec_parent, crossover_pt, "first"
+            )
+            second_offspring = continuous_solver.create_offspring(
+                sec_parent, first_parent, crossover_pt, "second"
+            )
+
+            assert {first_offspring[k], second_offspring[k]} == {first_parent[k], sec_parent[k]}
+            assert np.array_equal(first_offspring[:k], first_parent[:k])
+            assert np.array_equal(first_offspring[k + 1:], sec_parent[k + 1:])
+
+    def test_variables_type_normalization(self):
+
+        continuous_solver = ContinuousGenAlgSolver(
+            n_genes=3, variables_type=("int", "categorical", np.float64)
+        )
+
+        assert continuous_solver.variables_type == [int, "categorical", float]
+
+    @pytest.mark.parametrize(
+        "variables_type, expected_kind",
+        [
+            pytest.param(int, "i", id="int"),
+            pytest.param("categorical", "i", id="categorical"),
+            pytest.param((int, "categorical", int), "i", id="int_and_categorical"),
+            pytest.param((int, float, "categorical"), "f", id="mixed_with_float"),
+        ],
+    )
+    def test_population_dtype(self, variables_type, expected_kind):
+
+        continuous_solver = ContinuousGenAlgSolver(
+            n_genes=3,
+            fitness_function=lambda x: -np.sum((x - 4) ** 2),
+            variables_type=variables_type,
+            variables_limits=(0, 9),
+            pop_size=10,
+            max_gen=10,
+            random_state=0,
+            verbose=False,
+            show_stats=False,
+            plot_results=False,
+        )
+
+        continuous_solver.solve()
+
+        assert continuous_solver.population_.dtype.kind == expected_kind
+        assert continuous_solver.best_individual_.dtype.kind == expected_kind
+        assert continuous_solver.population_.min() >= 0
+        assert continuous_solver.population_.max() <= 9
 
     def test_mutate_population(self):
 

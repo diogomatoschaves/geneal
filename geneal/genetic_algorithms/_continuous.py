@@ -7,6 +7,30 @@ from geneal.utils.exceptions import InvalidInput
 from geneal.utils.helpers import get_input_dimensions
 
 
+def normalize_variable_type(variable_type):
+    """
+    Maps a gene type to float, int or "categorical". Integer genes are ordinal:
+    crossover can create values between the parents'. Categorical genes are integer
+    labels with no order (e.g. indices into a list of candidates), so each offspring
+    gene is copied from one of the parents.
+    """
+
+    if isinstance(variable_type, str):
+        if variable_type in ("float", "int", "categorical"):
+            return {"float": float, "int": int, "categorical": "categorical"}[variable_type]
+
+    elif isinstance(variable_type, type):
+        if issubclass(variable_type, (float, np.floating)):
+            return float
+        if issubclass(variable_type, (int, np.integer)):
+            return int
+
+    raise InvalidInput(
+        "`variables_type` must be `float`, `int` or \"categorical\", "
+        "or a tuple of those for each gene"
+    )
+
+
 class ContinuousGenAlgSolver(GenAlgSolver):
     def __init__(
         self,
@@ -25,7 +49,8 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         variables_type=float,
         n_crossover_points: int = 1,
         fitness_tolerance=None,
-        random_state: int = None,
+        random_state=None,
+        initial_population=None,
     ):
         """
         :param fitness_function: can either be a fitness function or
@@ -42,13 +67,19 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         :param plot_results: whether to plot results of the run at the end
         :param variables_limits: limits for each variable [(x1_min, x1_max), (x2_min, x2_max), ...].
             If only one tuple is provided, then it is assumed the same for every variable
-        :param variables_type: the type of each variable. Can be supplied for all variables or as tuple
-            for each individual variable.
+        :param variables_type: the type of each variable: float, int or "categorical". Can be supplied
+            for all variables or as tuple for each individual variable. Integer variables are ordinal
+            (crossover may produce values between the parents'); categorical variables are unordered
+            integer labels within the limits, and crossover copies each of them from one parent.
+            If no variable is a float, the population has an integer dtype.
         :param fitness_tolerance: optional. (a, b) tuple consisting of the tolerance on the
             change in the best fitness, and the number of generations the condition
             holds true. If the best fitness does not change by a value of (a) for a specified
             number of iterations (b), the solver stops and exits the loop.
-        :param random_state: optional. whether the random seed should be set
+        :param random_state: optional. An int seed or a np.random.RandomState. The solver
+            draws from its own generator, so numpy's global random state is left untouched.
+        :param initial_population: optional. Array of shape (k, n_genes), with k <= pop_size,
+            whose rows replace the first k individuals of the randomly initialized population.
         """
 
         GenAlgSolver.__init__(
@@ -66,7 +97,8 @@ class ContinuousGenAlgSolver(GenAlgSolver):
             excluded_genes=excluded_genes,
             n_crossover_points=n_crossover_points,
             random_state=random_state,
-            fitness_tolerance=fitness_tolerance
+            fitness_tolerance=fitness_tolerance,
+            initial_population=initial_population,
         )
 
         if not variables_limits:
@@ -78,16 +110,20 @@ class ContinuousGenAlgSolver(GenAlgSolver):
 
         self.variables_limits = variables_limits
 
-        if not variables_type:
+        if variables_type is None or (
+            isinstance(variables_type, (tuple, list)) and len(variables_type) == 0
+        ):
             self.variables_type = [float] * n_genes
-        elif variables_type in [float, int]:
-            self.variables_type = [variables_type] * n_genes
         elif isinstance(variables_type, (tuple, list, np.ndarray)):
             if len(variables_type) != n_genes:
                 raise InvalidInput("`variables_type` must have the same dimension as `n_genes`")
-            self.variables_type = variables_type
+            self.variables_type = [normalize_variable_type(t) for t in variables_type]
         else:
-            raise InvalidInput("`variables_type` must be either `float`, `int`, or a tuple of those for each gene")
+            self.variables_type = [normalize_variable_type(variables_type)] * n_genes
+
+        self.dtype = (
+            float if any(t == float for t in self.variables_type) else np.int64
+        )
 
         self.beta = 0.5
 
@@ -100,15 +136,15 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         :return: a numpy array with a randomized initialized population
         """
 
-        population = np.empty(shape=(self.pop_size, self.n_genes))
+        population = np.empty(shape=(self.pop_size, self.n_genes), dtype=self.dtype)
 
         for i, variable_limits in enumerate(self.variables_limits):
             if self.variables_type[i] == float:
-                population[:, i] = np.random.uniform(
+                population[:, i] = self.rng.uniform(
                     variable_limits[0], variable_limits[1], size=self.pop_size
                 )
             else:
-                population[:, i] = np.random.randint(
+                population[:, i] = self.rng.randint(
                     variable_limits[0], variable_limits[1] + 1, size=self.pop_size
                 )
 
@@ -121,11 +157,8 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         :return: a numpy array with the crossover points
         """
 
-        return np.sort(
-            np.random.choice(
-                np.arange(self.n_genes), self.n_crossover_points, replace=False
-            )
-        )
+        # Same draws as rng.choice(np.arange(...), replace=False), without its overhead
+        return np.sort(self.rng.permutation(self.n_genes)[: self.n_crossover_points])
 
     def create_offspring(
         self, first_parent, sec_parent, crossover_pt, offspring_number
@@ -141,6 +174,9 @@ class ContinuousGenAlgSolver(GenAlgSolver):
         where beta is a random number between 0 and 1, and can be either positive or negative
         depending on if it's the first or second offspring
 
+        For categorical genes, p_new is copied from first_parent if beta < 0.5, and
+        from sec_parent otherwise, so no new label is created.
+
         http://index-of.es/z0ro-Repository-3/Genetic-Algorithm/R.L.Haupt,%20S.E.Haupt%20-%20Practical%20Genetic%20Algorithms.pdf
 
         :param first_parent: first parent's chromosome
@@ -155,7 +191,7 @@ class ContinuousGenAlgSolver(GenAlgSolver):
 
         variable_limits = self.variables_limits[crossover_pt]
 
-        beta = np.random.rand(1)[0] if offspring_number == "first" else self.beta
+        beta = self.rng.rand(1)[0] if offspring_number == "first" else self.beta
 
         if self.variables_type[crossover_pt] == float:
             p_new = first_parent[crossover_pt] - beta * (
@@ -163,19 +199,21 @@ class ContinuousGenAlgSolver(GenAlgSolver):
             )
 
             if not variable_limits[0] <= p_new <= variable_limits[1]:
-                p_new = np.random.uniform(variable_limits[0], variable_limits[1] + 1)
+                p_new = self.rng.uniform(variable_limits[0], variable_limits[1] + 1)
+        elif self.variables_type[crossover_pt] == "categorical":
+            p_new = first_parent[crossover_pt] if beta < 0.5 else sec_parent[crossover_pt]
         else:
             p_new = first_parent[crossover_pt] - np.round(
                 beta * (first_parent[crossover_pt] - sec_parent[crossover_pt])
             )
 
             if not variable_limits[0] <= p_new <= variable_limits[1]:
-                p_new = np.random.randint(variable_limits[0], variable_limits[1] + 1)
+                p_new = self.rng.randint(variable_limits[0], variable_limits[1] + 1)
 
         self.beta = beta
 
-        return np.hstack(
-            (first_parent[:crossover_pt], p_new, sec_parent[crossover_pt + 1 :])
+        return np.concatenate(
+            (first_parent[:crossover_pt], [p_new], sec_parent[crossover_pt + 1 :])
         )
 
     def mutate_population(self, population, n_mutations):

@@ -22,7 +22,8 @@ class BinaryGenAlgSolver(GenAlgSolver):
         excluded_genes: Sequence = None,
         n_crossover_points: int = 1,
         fitness_tolerance=None,
-        random_state: int = None,
+        random_state=None,
+        initial_population=None,
     ):
         """
         :param fitness_function: can either be a fitness function or a class implementing a fitness function +
@@ -41,7 +42,10 @@ class BinaryGenAlgSolver(GenAlgSolver):
             change in the best fitness, and the number of generations the condition
             holds true. If the best fitness does not change by a value of (a) for a specified
             number of iterations (b), the solver stops and exits the loop.
-        :param random_state: optional. whether the random seed should be set
+        :param random_state: optional. An int seed or a np.random.RandomState. The solver
+            draws from its own generator, so numpy's global random state is left untouched.
+        :param initial_population: optional. Array of shape (k, n_genes * n_bits), with
+            k <= pop_size, whose rows replace the first k individuals of the random population.
         """
 
         GenAlgSolver.__init__(
@@ -59,7 +63,8 @@ class BinaryGenAlgSolver(GenAlgSolver):
             excluded_genes=excluded_genes,
             n_crossover_points=n_crossover_points,
             random_state=random_state,
-            fitness_tolerance=fitness_tolerance
+            fitness_tolerance=fitness_tolerance,
+            initial_population=initial_population,
         )
 
     def initialize_population(self):
@@ -75,8 +80,8 @@ class BinaryGenAlgSolver(GenAlgSolver):
 
         for _ in range(self.pop_size):
             bits = np.zeros(self.n_genes)
-            bits[: np.random.randint(0, self.n_genes)] = 1
-            np.random.shuffle(bits)
+            bits[: self.rng.randint(0, self.n_genes)] = 1
+            self.rng.shuffle(bits)
 
             bits_array.append(bits)
 

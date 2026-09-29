@@ -119,8 +119,13 @@ solver.solve()
 ```
 
 A notable difference to the binary GA solver is the fact that we can customize the input space of the problem
-by defining if the problem is of type `int` or `float`, and defining an overall minimum and maximum values for each
-variable (or for all at once).
+by defining if the problem is of type `int`, `float` or `"categorical"`, and defining an overall minimum and maximum
+values for each variable (or for all at once).
+
+`int` variables are ordinal: crossover can produce a value between the two parents' values. `"categorical"` variables
+are integer labels with no order (for instance, indices into a list of candidates), so crossover copies each of them
+from one of the parents. Types can be mixed per variable, e.g. `variables_type=(float, int, "categorical")`.
+If no variable is a `float`, the population has an integer dtype.
 
 ```python
 
@@ -144,6 +149,63 @@ solver = ContinuousGenAlgSolver(
 solver.solve()
 
 ```
+
+### Evaluating fitness in batches: ask / tell
+
+`solve()` calls the fitness function once per individual. When fitness is cheaper to compute for many individuals at
+once (e.g. one `model.predict` call), either override `calculate_fitness(self, population)`, which receives the whole
+population as a 2-D array and must return one fitness value per row, or drive the solver yourself with `ask()` and
+`tell()`. No `fitness_function` is needed in either case.
+
+`ask()` returns the individuals that need a fitness value, one per row, and `tell(fitness)` takes their fitness values
+in the same order and advances the optimization by one generation. `done` becomes `True` once `max_gen` generations
+were run or `fitness_tolerance` was met. For the same `random_state`, this gives exactly the same result as `solve()`.
+
+This makes it possible to step many independent solvers in lockstep, so that a single batched evaluation serves all
+of them:
+
+```python
+import numpy as np
+
+from geneal.genetic_algorithms import ContinuousGenAlgSolver
+
+solvers = [
+    ContinuousGenAlgSolver(
+        n_genes=4,
+        variables_type="categorical",
+        variables_limits=(0, 9),
+        pop_size=30,
+        max_gen=50,
+        random_state=i,
+        verbose=False,
+        show_stats=False,
+        plot_results=False,
+    )
+    for i in range(1000)
+]
+
+while not all(solver.done for solver in solvers):
+    active = [solver for solver in solvers if not solver.done]
+    candidates = [solver.ask() for solver in active]
+
+    fitness = evaluate(np.vstack(candidates))  # your batched fitness, one value per row
+
+    splits = np.cumsum([len(c) for c in candidates])[:-1]
+    for solver, solver_fitness in zip(active, np.split(fitness, splits)):
+        solver.tell(solver_fitness)
+
+best = [solver.best_individual_ for solver in solvers]
+```
+
+After each `tell()`, `population_` and `fitness_` hold the current population sorted by descending fitness, and
+`best_individual_` / `best_fitness_` its fittest individual.
+
+### Seeding and reproducibility
+
+- `initial_population`: an array of shape `(k, n_genes)`, with `k <= pop_size`, whose rows replace the first `k`
+  individuals of the random initial population (e.g. known good solutions).
+- `random_state`: an `int` seed or a `np.random.RandomState`. Each solver draws from its own generator, so numpy's
+  global random state is not modified. With `None`, numpy's global random state is used.
 
 ### selection strategy
 
